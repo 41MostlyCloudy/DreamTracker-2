@@ -1,0 +1,67 @@
+
+----------------------------------------------------
+INSTRUMENT FILE FORMAT
+----------------------------------------------------
+
+
+
+
+
+(1 byte) Volume
+
+(1 byte) Fuzz level
+
+(1 byte) Arppeggio speed/length
+
+For all 8 arp values:
+	|
+	| (1 byte) Arp value
+	|
+
+(1 byte) Modulation type/scale
+
+(1 byte) Envelope scale
+
+For all 2 waves:
+	|
+	| For all 183 frames:
+	|	|
+	|	| (1 byte) Frame value
+	|	|
+	|
+	| (1 byte) Duty cycle
+	|
+	| (1 byte) Smoothness
+	|
+	| (1 byte) Noise Volume
+	|
+	| (1 byte) Number of sine waves (for sine approx. wave types)
+	|
+	| (1 byte) Wave type
+	|
+	| (1 byte) Noise seed (if using noise wave type)
+	|
+	| (1 byte) Offset + Octave
+	|
+	| (1 byte) Release
+	|
+	| (1 byte) Boolean flags
+	|
+	| For all 8 frequencies:
+	|	|
+	|	| (1 byte) Frequency value
+	|	|
+	|
+	| (1 byte) Envelope starting amp
+	|
+	| (1 byte) Number of envelope points
+	|
+	| For all points:
+	|	|
+	|	| (1 byte) Point position
+	|	|
+	|	| (1 byte) Point amplitude
+	|	|
+	|
+	|
+	|
