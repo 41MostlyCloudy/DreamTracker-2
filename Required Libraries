@@ -1,0 +1,10 @@
+
+Libraries fiolder: glfw3.lib
+
+Include folder: Glad, GLFW, glm, KHR
+
+Linker-> Input setting in Visual Studio: glfw3.lib, opengl32.lib
+
+Link the Include and Library folders as directories.
+
+Use C++ 17.
