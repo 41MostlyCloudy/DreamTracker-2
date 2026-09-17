@@ -325,7 +325,7 @@ void  DrawTopUI()
 	
 	for (int y = 2; y < 11; y++)
 	{
-		if (y - 2 + gui.instrumentListScroll < 256 && y - 2 + gui.instrumentListScroll >= 0) // Draw samples
+		if (y - 2 + gui.instrumentListScroll < 16 && y - 2 + gui.instrumentListScroll >= 0) // Draw samples
 		{
 			if (!loadedInstruments[y - 2 + gui.instrumentListScroll].enabled)
 			{

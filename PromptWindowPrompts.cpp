@@ -489,56 +489,7 @@ void ClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clickPos
 
 			if (clickPos.y > 25 && clickPos.y < 38 && editor.selectedInstrument > -1) // Sample display
 			{
-				if (clickPos.y > 30) // Create sample points.
-				{
-					float amp = 1.0f - (clickFloat.y - 32.0f) / (37.0f - 32.0f);
-					amp *= 255.0f;
-					amp = int(amp);
-					amp /= 255.0f;
-					if (amp < 0.0f) amp = 0.0f;
-					else if (amp > 1.0f) amp = 1.0f;
-
-					int pos = int((gui.floatHoveredTile.x - windowController.windows[windowIndex].position.x - 1.0f) * (40.0f + 0.5f) / 33.0f);
-					if (pos > 40.0f)
-						pos = 40.04;
-
-					if (pos == 0)
-					{
-						loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelopeStartAmp = amp;
-						DrawSampleDisplay();
-						return;
-					}
-
-					for (int i = 0; i < loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelopePoints.size(); i++)
-					{
-						if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelopePoints[i].position == pos)
-						{
-							loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelopePoints[i].amp = amp;
-							DrawSampleDisplay();
-							return;
-						}
-						else if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelopePoints[i].position > pos)
-						{
-							EnvelopePoint newP;
-							newP.position = pos;
-							newP.amp = amp;
-
-							loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelopePoints.emplace(
-								loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelopePoints.begin() + i, newP);
-							DrawSampleDisplay();
-							return;
-						}
-					}
-
-					EnvelopePoint newP;
-					newP.position = pos;
-					newP.amp = amp;
-
-					loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelopePoints.emplace_back(newP);
-					DrawSampleDisplay();
-
-					return;
-				}
+				
 			}
 			else if (clickPos.y > 37)
 			{
@@ -736,40 +687,7 @@ void RightClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 cli
 	if (clickPos.y > 0)
 	{
 
-		if (wind->name == "Instrument Editor")
-		{
-			if (loadedInstruments[editor.selectedInstrument].enabled)
-			{
-				// Envelope display
-				if (clickPos.y > 30)
-				{
-					int pos = int((gui.floatHoveredTile.x - windowController.windows[windowIndex].position.x - 1.0f) * (40.0f + 0.5f) / 33.0f);
-					if (pos > 40.0f)
-						pos = 40.0f;
-
-					if (pos == 0)
-					{
-						return;
-					}
-
-					for (int i = 0; i < loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelopePoints.size(); i++)
-					{
-						if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelopePoints[i].position == pos)
-						{
-							loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelopePoints.erase(
-								loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelopePoints.begin() + i);
-							loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelopePoints.shrink_to_fit();
-							DrawSampleDisplay();
-							return;
-						}
-						else if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelopePoints[i].position > pos)
-						{
-							return;
-						}
-					}
-				}
-			}
-		}
+		
 	}
 
 

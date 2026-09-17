@@ -100,9 +100,6 @@ struct InstrumentWave
 	bool mirror = false;
 
 
-	// Envelope properties
-	float envelopeStartAmp = 1.0f;
-	std::vector <EnvelopePoint> envelopePoints = { };
 
 
 	int envelope[32] = { 0 };
@@ -441,9 +438,7 @@ struct ChannelWaveform
 	float envelopePos = 0.0f;
 	int currentEnvelopeIndex = 0;
 
-	float currentEnvelopePos = 0.0f;
 	float currentEnvelopeAmp = 0.0f;
-	float nextEnvelopePos = 0.0f;
 	float nextEnvelopeAmp = 0.0f;
 
 	float smoothVolume = 0.0f;

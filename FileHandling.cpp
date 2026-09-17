@@ -214,7 +214,7 @@ void SaveSong() // Save the currently loaded song.
         ////////////////////// SAMPLES
 
 
-        for (int i = 0; i < 32; i++)
+        for (int i = 0; i < 2; i++)
         {
             uint8_t enabled = 0;
 
@@ -232,7 +232,7 @@ void SaveSong() // Save the currently loaded song.
 
 
         
-        for (int i = 0; i < 256; i++)
+        for (int i = 0; i < 16; i++)
         {
             if (loadedInstruments[i].enabled)
             {
@@ -433,7 +433,7 @@ void LoadSong(std::string name) // Load the song file with the given name.
         ////////////////////// SAMPLES
         
 
-        for (int i = 0; i < 32; i++)
+        for (int i = 0; i < 2; i++)
         {
             uint8_t enabled;
             songFile.read((char*)&enabled, 1);
@@ -453,7 +453,7 @@ void LoadSong(std::string name) // Load the song file with the given name.
 
 
         
-        for (int i = 0; i < 256; i++)
+        for (int i = 0; i < 16; i++)
         {
             if (loadedInstruments[i].enabled)
             {

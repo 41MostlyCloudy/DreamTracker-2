@@ -756,7 +756,7 @@ void processInput(GLFWwindow* window)
             gui.instrumentListScrollBar.position = (gui.floatHoveredTile.y - 3.5f) / 7.0f;
             if (gui.instrumentListScrollBar.position < 0.0f) gui.instrumentListScrollBar.position = 0.0f;
             if (gui.instrumentListScrollBar.position > 1.0f) gui.instrumentListScrollBar.position = 1.0f;
-            gui.instrumentListScroll = gui.instrumentListScrollBar.position * (256.0f - 10.0f);
+            gui.instrumentListScroll = gui.instrumentListScrollBar.position * (16.0f - 10.0f);
             gui.drawUIThisFrame = true;
         }
         if (gui.patternVerticalScrollBar.drag) // Scroll pattern y.
@@ -2191,7 +2191,7 @@ void pressButton(GLFWwindow* window)
         else if (gui.hoveredTile.x == 91) // File menu scroll down.
         {
             gui.activeUI[91][11].sprite = { 7, 4 };
-            if (gui.instrumentListScroll < 256 - 10)
+            if (gui.instrumentListScroll < 16 - 10)
                 gui.instrumentListScroll++;
         }
         gui.drawFrameThisFrame = true;

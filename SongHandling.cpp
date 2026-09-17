@@ -91,17 +91,7 @@ void readModulator(float* pOutputF32, ma_uint64 frameCount, int channel, int op,
         notePitch = channels[channel].pitch * channels[channel].arpPitch;
 
 
-    /*
-    if (channels[channel].arpIndex > -1) // Arpeggiate note and find pitch.
-    {
-        float arpNote = ((channels[channel].arpP[channels[channel].arpIndex]) - 7.75f) * 4.0f;
-        arpNote /= loadedSong.edo;
-        arpNote = pow(2, arpNote);
-        notePitch *= arpNote;
-    }*/
-
-    //float wavePitch = pitch;
-    //wavePitch = pow(2, wavePitch / loadedSong.edo);
+    
 
 
 
@@ -201,15 +191,7 @@ void readModulator(float* pOutputF32, ma_uint64 frameCount, int channel, int op,
             notePitch *= channels[channel].arpPitch;
 
 
-        /*
-        if (channels[channel].arpIndex > -1) // Arpeggiate note and find pitch.
-        {
-            float arpNote = ((channels[channel].arpP[channels[channel].arpIndex]) - 7.75f) * 4.0f;
-            arpNote /= loadedSong.edo;
-            arpNote = pow(2, arpNote);
-            notePitch *= arpNote;
-        }
-        */
+
 
         notePitch *= lfoMultiplier;
 
@@ -227,8 +209,6 @@ void readModulator(float* pOutputF32, ma_uint64 frameCount, int channel, int op,
 
             if (loadedInstruments[channels[channel].instrument].modulationType == 1) // FM
             {
-                //channels[channel].waveforms[op].sampleReadPos += mod[i * 2] * modStrength * 2.0f;
-                //notePitch = mod[i * 2] * modStrength * 2.0f;
                 notePitch += mod[i] * modStrength * 8.0f;
             }
             else if (loadedInstruments[channels[channel].instrument].modulationType == 2) // AM
@@ -713,22 +693,14 @@ void StartNote(int channel, int sampleNumber, float pitch)
     for (int wave = 0; wave < 2; wave++)
     {
         // Set envelope position.
-        channels[channel].waveforms[wave].currentEnvelopeIndex = -1;
+        channels[channel].waveforms[wave].currentEnvelopeIndex = 0;
         channels[channel].waveforms[wave].envelopePos = 0.0f;
 
-        channels[channel].waveforms[wave].currentEnvelopeAmp = loadedInstruments[channels[channel].instrument].waveforms[wave].envelopeStartAmp;
-        channels[channel].waveforms[wave].currentEnvelopePos = 0.0f;
+        
+        channels[channel].waveforms[wave].currentEnvelopeAmp = float(loadedInstruments[sampleNumber].waveforms[wave].envelope[0]) / 255.0f;
+        channels[channel].waveforms[wave].nextEnvelopeAmp = float(loadedInstruments[sampleNumber].waveforms[wave].envelope[0]) / 255.0f;
 
-        if (loadedInstruments[channels[channel].instrument].waveforms[wave].envelopePoints.size() > 0)
-        {
-            channels[channel].waveforms[wave].nextEnvelopeAmp = loadedInstruments[channels[channel].instrument].waveforms[wave].envelopePoints[0].amp;
-            channels[channel].waveforms[wave].nextEnvelopePos = loadedInstruments[channels[channel].instrument].waveforms[wave].envelopePoints[0].position;
-        }
-        else
-        {
-            channels[channel].waveforms[wave].nextEnvelopeAmp = channels[channel].waveforms[wave].currentEnvelopeAmp;
-            channels[channel].waveforms[wave].nextEnvelopePos = 10000.0f;
-        }
+        
 
         // Restart release timers.
         channels[channel].waveforms[wave].releaseTimer = 0.0f;
@@ -930,9 +902,9 @@ void updateChannelOnBeat(int ch)
             else if (effectType == 2) // Decrease pitch.
                 channels[ch].pitchSlide = float(effectVal) / -100.0f;
             else if (effectType == 3) // Increase volume.
-                channels[ch].volumeSlide = float(effectVal) / 1000.0f;
+                channels[ch].volumeSlide = float(effectVal) / 2000.0f;
             else if (effectType == 4) // Decrease volume.
-                channels[ch].volumeSlide = float(effectVal) / -1000.0f;
+                channels[ch].volumeSlide = float(effectVal) / -2000.0f;
             else if (effectType == 5) // Increase modulator.
                 channels[ch].modSlide = float(effectVal) / 1000.0f;
             else if (effectType == 6) // Decrease modulator.

@@ -78,7 +78,7 @@ For each channel:
 	|
 
 
-(32 bytes) Sample enabled
+(2 bytes) Sample enabled
 
 For all enabled samples:
 	|
