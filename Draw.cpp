@@ -2458,11 +2458,6 @@ void DrawFloatingWindow(FloatingWindow* wind)
 
 		
 
-		// Fuzz
-		DrawGUIText("Clip:", wind->position.x + 1, wind->position.x + 10, wind->position.y + 9, 3, 0);
-		DrawHorizontalSlider(int(wind->position.x + 9), int(wind->position.x + 17), int(wind->position.y + 9), loadedInstruments[editor.selectedInstrument].fuzz);
-
-
 		// Offset
 		DrawGUIText("Offset:", wind->position.x + 1, wind->position.x + 10, wind->position.y + 13, 3, 0);
 		DrawHorizontalSlider(int(wind->position.x + 9), int(wind->position.x + 17), int(wind->position.y + 13), loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].offset);

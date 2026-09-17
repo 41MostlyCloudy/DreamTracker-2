@@ -1788,6 +1788,14 @@ void pressButton(GLFWwindow* window)
             sampleDisplay.visible = true;
             sampleDisplay.selectedOperator = 0; // Select the first sample operator.
 
+            if (!loadedInstruments[editor.selectedInstrument].enabled) // Reset envelope.
+            {
+                for (int wave = 0; wave < 2; wave++)
+                {
+                    for (int env = 0; env < 32; env++)
+                        loadedInstruments[editor.selectedInstrument].waveforms[wave].envelope[env] = 255;
+                }
+            }
             loadedInstruments[editor.selectedInstrument].enabled = true;
 
             DrawSampleDisplay();
@@ -1945,6 +1953,8 @@ void pressButton(GLFWwindow* window)
                         {
                             for (int fr = 0; fr < 183; fr++)
                                 emptyinstrument.waveforms[wave].pcmFrames[fr] = { 0.0f };
+                            for (int env = 0; env < 32; env++)
+                                emptyinstrument.waveforms[wave].envelope[env] = 255;
                         }
                         loadedInstruments[editor.selectedInstrument] = emptyinstrument;
                         loadedInstruments[editor.selectedInstrument].enabled = true;
@@ -1962,6 +1972,8 @@ void pressButton(GLFWwindow* window)
                         {
                             for (int fr = 0; fr < 183; fr++)
                                 emptyinstrument.waveforms[wave].pcmFrames[fr] = { 0.0f };
+                            for (int env = 0; env < 32; env++)
+                                emptyinstrument.waveforms[wave].envelope[env] = 255;
                         }
                         loadedInstruments[editor.selectedInstrument] = emptyinstrument;
                         loadedInstruments[editor.selectedInstrument].enabled = false;

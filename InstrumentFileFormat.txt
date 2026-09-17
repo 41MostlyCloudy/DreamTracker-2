@@ -9,7 +9,7 @@ INSTRUMENT FILE FORMAT
 
 (1 byte) Volume
 
-(1 byte) Fuzz level
+(1 byte) UNUSED
 
 (1 byte) Arppeggio speed/length
 
@@ -52,11 +52,17 @@ For all 2 waves:
 	|	| (1 byte) Frequency value
 	|	|
 	|
-	| (1 byte) Envelope starting amp
+	| For all 32 envelope points:
+	|	|
+	|	| (1 byte) Amplitude
+	|	|
 	|
-	| (1 byte) Number of envelope points
 	|
-	| For all points:
+	| (1 byte) Envelope starting amp (DELETE)
+	|
+	| (1 byte) Number of envelope points (DELETE)
+	|
+	| For all points: (DELETE)
 	|	|
 	|	| (1 byte) Point position
 	|	|

@@ -29,6 +29,8 @@ For each pattern sequence index:
 
 For each pattern:
 	|
+	| (1 byte) Song pattern rows
+	|
 	| For all 8 channels:
 	|	|
 	|	| (1 byte) Channel pattern index
@@ -47,6 +49,7 @@ For each channel:
 	|	|	| (1 byte) Stereo
 	|	|	|
 	|	|	| (1 byte) Loop at end
+	|	|	|
 	|	|	|
 	|	|	| (1 byte) Size of note sequence
 	|	|	|

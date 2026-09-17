@@ -382,6 +382,7 @@ void ClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clickPos
 		}
 		else if (wind->name == "Instrument Editor")
 		{
+
 			if (!loadedInstruments[editor.selectedInstrument].enabled)
 				return;
 
@@ -449,6 +450,8 @@ void ClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clickPos
 				}
 			}
 
+			
+
 
 			if (clickPos.y == 14) // Toggle mirror sample
 			{
@@ -481,7 +484,7 @@ void ClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clickPos
 			}
 
 
-
+			
 
 
 			if (clickPos.y > 25 && clickPos.y < 38 && editor.selectedInstrument > -1) // Sample display
@@ -571,6 +574,8 @@ void ClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clickPos
 					}
 				}
 			}
+
+			return;
 			
 		}
 		else if (wind->name == "Presets")
@@ -700,12 +705,13 @@ void ClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clickPos
 					sampleDisplay.selectedOperator = 0; // Select the first sample operator.
 				}
 			}
-		}
-		if (clickPos.y == 11 && clickPos.x > 7 && clickPos.x < 14) // Copy instrument.
-		{
-			loadedInstruments[editor.selectedInstrument] = loadedInstruments[instrumentFloatingWindow.selectedInstrument];
 
-			return;
+			if (clickPos.y == 11 && clickPos.x > 7 && clickPos.x < 14) // Copy instrument.
+			{
+				loadedInstruments[editor.selectedInstrument] = loadedInstruments[instrumentFloatingWindow.selectedInstrument];
+
+				return;
+			}
 		}
 	}
 
@@ -883,20 +889,6 @@ void HoldClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clic
 						DrawSampleDisplay();
 					}
 				}
-				else if (int(clickPos.y) == 9) // Set sample fuzz.
-				{
-					loadedInstruments[editor.selectedInstrument].fuzz = (float(int((clickPos.x - 9) * 2.0f)) / 16.0f);;
-
-					if (loadedInstruments[editor.selectedInstrument].fuzz < 0)
-						loadedInstruments[editor.selectedInstrument].fuzz = 0;
-					else if (loadedInstruments[editor.selectedInstrument].fuzz > 0.9375)
-						loadedInstruments[editor.selectedInstrument].fuzz = 0.9375;
-
-					loadedSong.unsavedChanges = true;
-					DrawSampleDisplay();
-
-					return;
-				}
 				else if (int(clickPos.y) == 10) // Edit noise volume.
 				{
 					loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].noiseVolume = (float(int((clickPos.x - 9) * 2.0f)) / 16.0f);
@@ -1058,6 +1050,33 @@ void HoldClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clic
 							loadedSong.unsavedChanges = true;
 						}
 					}
+				}
+			}
+
+
+
+
+			if (clickPos.y > 25 && clickPos.y < 38 && editor.selectedInstrument > -1) // Sample display
+			{
+				if (clickPos.y > 30) // Create sample points.
+				{
+					float amp = 1.0f - (clickPos.y - 32.0f) / (37.0f - 32.0f);
+					amp *= 255.0f;
+					amp = int(amp);
+					if (amp < 0.0f) amp = 0.0f;
+					else if (amp > 255.0f) amp = 255.0f;
+
+					int pos = int(gui.floatHoveredTile.x - windowController.windows[windowIndex].position.x - 1.0f);
+
+					if (pos < 0) pos = 0;
+					else if (pos > 31) pos = 31;
+
+					loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelope[pos] = int(amp);
+					
+					
+					DrawSampleDisplay();
+
+					return;
 				}
 			}
 

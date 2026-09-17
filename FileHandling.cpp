@@ -129,6 +129,9 @@ void SaveSong() // Save the currently loaded song.
 
         for (int i = 0; i < loadedSong.patterns.size(); i++) // Pattern.
         {
+            uint8_t songPatternRows = loadedSong.patterns[i].rows;
+            songFile.write((char*)&songPatternRows, 1);
+
             for (int ch = 0; ch < 8; ch++)
             {
                 uint8_t channelP = loadedSong.patterns[i].channelPatterns[ch];
@@ -339,6 +342,10 @@ void LoadSong(std::string name) // Load the song file with the given name.
 
         for (int i = 0; i < patternNum; i++)
         {
+            uint8_t channelPatternRows;
+            songFile.read((char*)&channelPatternRows, 1);
+            loadedSong.patterns[i].rows = channelPatternRows;
+
             for (int ch = 0; ch < 8; ch++)
             {
                 uint8_t chP;
@@ -363,7 +370,7 @@ void LoadSong(std::string name) // Load the song file with the given name.
 
                 uint8_t numRows;
                 songFile.read((char*)&numRows, 1);
-                newchanPat.beatsPerMeasure = numRows;
+                newchanPat.rows = numRows;
 
                 uint8_t chBPM;
                 songFile.read((char*)&chBPM, 1);
@@ -663,7 +670,8 @@ void WriteInstrument(std::ofstream* instrumentFile, Instrument* instrument)
     instrumentFile->write((char*)&volume, 1);
 
     uint8_t fuzzByte = 0;
-    int fuzz = int(instrument->fuzz * 16.0f);
+    //int fuzz = int(instrument->fuzz * 16.0f);
+    int fuzz = 0.0;
     if (fuzz > 15) fuzz = 15; else if (fuzz < 0) fuzz = 0; // Clamp
     fuzzByte = fuzz;
     instrumentFile->write((char*)&fuzzByte, 1);
@@ -700,6 +708,12 @@ void WriteInstrument(std::ofstream* instrumentFile, Instrument* instrument)
             uint8_t frameVal = uint8_t(scaledFrame);
             instrumentFile->write((char*)&frameVal, 1);
         }
+        /*
+        for (int env = 0; env < 32; env++)
+        {
+            uint8_t envVal = uint8_t(instrument->waveforms[j].envelope[env]);
+            instrumentFile->write((char*)&envVal, 1);
+        }*/
 
 
 
@@ -751,22 +765,12 @@ void WriteInstrument(std::ofstream* instrumentFile, Instrument* instrument)
 
         //////////////////////////////////////////////////////////////////////// Envelope
 
-
-        uint8_t envelopeVar = int(instrument->waveforms[j].envelopeStartAmp * 255.0f);
-        instrumentFile->write((char*)&envelopeVar, 1);
-
-        uint8_t numPoints = instrument->waveforms[j].envelopePoints.size();
-        instrumentFile->write((char*)&numPoints, 1);
-
-
-        for (int p = 0; p < int(numPoints); p++)
+        for (int p = 0; p < 32; p++)
         {
-            envelopeVar = instrument->waveforms[j].envelopePoints[p].position;
-            instrumentFile->write((char*)&envelopeVar, 1);
-
-            envelopeVar = int(instrument->waveforms[j].envelopePoints[p].amp * 255.0f);
-            instrumentFile->write((char*)&envelopeVar, 1);
+            waveVar = instrument->waveforms[j].envelope[p];
+            instrumentFile->write((char*)&waveVar, 1);
         }
+        
 
     }
 
@@ -792,7 +796,7 @@ Instrument ReadInstrument(std::ifstream* instrumentFile)
 
     uint8_t clip;
     instrumentFile->read((char*)&clip, 1);
-    newInstrument.fuzz = float(clip) / 16.0f;
+    //newInstrument.fuzz = float(clip) / 16.0f;
 
 
     uint8_t readVar = 0;
@@ -842,6 +846,13 @@ Instrument ReadInstrument(std::ifstream* instrumentFile)
             scaledFrame /= 128.0f;
             newInstrument.waveforms[j].pcmFrames[fr] = scaledFrame;
         }
+        /*
+        for (int env = 0; env < 32; env++)
+        {
+            int envVal = 0;
+            instrumentFile->read((char*)&envVal, 1);
+            newInstrument.waveforms[j].envelope[env] = envVal;
+        }*/
 
 
 
@@ -919,24 +930,17 @@ Instrument ReadInstrument(std::ifstream* instrumentFile)
         uint8_t envelopeVar;
 
 
-        instrumentFile->read((char*)&envelopeVar, 1);
-        newInstrument.waveforms[j].envelopeStartAmp = float(envelopeVar) / 255.0f;
-
-        uint8_t numOfEnvPoints;
-        instrumentFile->read((char*)&numOfEnvPoints, 1);
-
-        newInstrument.waveforms[j].envelopePoints.clear();
-        for (int p = 0; p < numOfEnvPoints; p++)
+        for (int p = 0; p < 32; p++)
         {
-            EnvelopePoint newP;
             instrumentFile->read((char*)&envelopeVar, 1);
-            newP.position = int(envelopeVar);
-
-            instrumentFile->read((char*)&envelopeVar, 1);
-            newP.amp = float(envelopeVar) / 255.0f;
-
-            newInstrument.waveforms[j].envelopePoints.emplace_back(newP);
+            newInstrument.waveforms[j].envelope[p] = envelopeVar;
         }
+
+        
+
+
+        
+        
     }
 
 
@@ -1082,6 +1086,8 @@ void ClearSong()
             {
                 for (int fr = 0; fr < 183; fr++)
                     loadedInstruments[i].waveforms[wave].pcmFrames[fr] = { 0.0f };
+                for (int env = 0; env < 32; env++)
+                    loadedInstruments[i].waveforms[wave].envelope[env] = 255;
             }
 
             loadedInstruments[i].enabled = false;

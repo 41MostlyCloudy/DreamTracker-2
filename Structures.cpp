@@ -105,6 +105,9 @@ struct InstrumentWave
 	std::vector <EnvelopePoint> envelopePoints = { };
 
 
+	int envelope[32] = { 0 };
+
+
 };
 
 
@@ -128,7 +131,7 @@ struct Instrument
 	int arpLength = 1; // 1 - 16 notes per beat.
 
 
-	float fuzz = 0.0f;
+
 
 	// Envelope properties
 	float envelopeScale = 1.0f;

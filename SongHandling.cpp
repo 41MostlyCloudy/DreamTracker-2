@@ -128,27 +128,21 @@ void readModulator(float* pOutputF32, ma_uint64 frameCount, int channel, int op,
 
         channels[channel].waveforms[op].envelopePos += 0.001f * loadedInstruments[channels[channel].instrument].envelopeScale;
 
-        while (channels[channel].waveforms[op].envelopePos >= channels[channel].waveforms[op].nextEnvelopePos)
+        while (channels[channel].waveforms[op].envelopePos >= 1.0f)
         {
-            channels[channel].waveforms[op].currentEnvelopePos = channels[channel].waveforms[op].nextEnvelopePos;
             channels[channel].waveforms[op].currentEnvelopeAmp = channels[channel].waveforms[op].nextEnvelopeAmp;
             channels[channel].waveforms[op].currentEnvelopeIndex++;
 
-            if (channels[channel].waveforms[op].currentEnvelopeIndex < loadedInstruments[channels[channel].instrument].waveforms[op].envelopePoints.size())
+            if (channels[channel].waveforms[op].currentEnvelopeIndex < 32)
             {
-                channels[channel].waveforms[op].nextEnvelopePos = loadedInstruments[channels[channel].instrument].waveforms[op].envelopePoints[channels[channel].waveforms[op].currentEnvelopeIndex].position;
-                channels[channel].waveforms[op].nextEnvelopeAmp = loadedInstruments[channels[channel].instrument].waveforms[op].envelopePoints[channels[channel].waveforms[op].currentEnvelopeIndex].amp;
+                channels[channel].waveforms[op].nextEnvelopeAmp = float(loadedInstruments[channels[channel].instrument].waveforms[op].envelope[channels[channel].waveforms[op].currentEnvelopeIndex]) / 255.0f;
             }
-            else // Envelope complete.
-            {
-                channels[channel].waveforms[op].nextEnvelopePos = 1000000.0f;
-            }
+
+            channels[channel].waveforms[op].envelopePos -= 1.0f;
         }
 
 
-        float envInterp = float(channels[channel].waveforms[op].envelopePos - channels[channel].waveforms[op].currentEnvelopePos) /
-            (channels[channel].waveforms[op].nextEnvelopePos - channels[channel].waveforms[op].currentEnvelopePos);
-
+        float envInterp = channels[channel].waveforms[op].envelopePos;
         float envAmp = channels[channel].waveforms[op].currentEnvelopeAmp * (1.0f - envInterp) + channels[channel].waveforms[op].nextEnvelopeAmp * envInterp;
 
 
@@ -179,6 +173,8 @@ void readModulator(float* pOutputF32, ma_uint64 frameCount, int channel, int op,
 
         if (loadedInstruments[channels[channel].instrument].waveforms[op].pitchToNote)
             notePitch = channels[channel].pitch;
+        else
+            notePitch = 1.0;
 
 
         
@@ -233,7 +229,7 @@ void readModulator(float* pOutputF32, ma_uint64 frameCount, int channel, int op,
             {
                 //channels[channel].waveforms[op].sampleReadPos += mod[i * 2] * modStrength * 2.0f;
                 //notePitch = mod[i * 2] * modStrength * 2.0f;
-                notePitch += mod[i] * modStrength * 2.0f;
+                notePitch += mod[i] * modStrength * 8.0f;
             }
             else if (loadedInstruments[channels[channel].instrument].modulationType == 2) // AM
             {
@@ -250,7 +246,7 @@ void readModulator(float* pOutputF32, ma_uint64 frameCount, int channel, int op,
             }
             else if (loadedInstruments[channels[channel].instrument].modulationType == 4) // Apply delay.
             {
-                float delayIndex = channels[channel].waveforms[op].sampleReadPos + mod[i] * 100.0f * modStrength * 2.0f;
+                float delayIndex = channels[channel].waveforms[op].sampleReadPos + mod[i] * 100.0f * modStrength * 4.0f;
 
                 while (delayIndex < 0) delayIndex += (183);
                 while (delayIndex >= 183) delayIndex -= (183);
@@ -420,10 +416,7 @@ void applySubtractiveFilters(float* pOutputF32, ma_uint64 frameCount, int channe
         float frameL = input[i];
         
 
-        // The added volume clip.
-        float fuzzLevel = 1.0f - loadedInstruments[channels[channel].instrument].fuzz;
-        if (frameL > fuzzLevel) frameL = fuzzLevel;
-        else if (frameL < -fuzzLevel) frameL = -fuzzLevel;
+        
 
         frameL *= 0.5f;
 
@@ -1356,14 +1349,7 @@ void DrawSampleDisplay()
 
         lastFrameVal = frameVal;
 
-        // Draw the clip volume.
-        int clipVol = int((0.9375 - loadedInstruments[editor.selectedInstrument].fuzz) * 20.0f);
-        sampleDisplay.pixelData[x + 264 * (clipVol + 60)].r = gui.uiColors[33] * 255.0f;
-        sampleDisplay.pixelData[x + 264 * (clipVol + 60)].g = gui.uiColors[34] * 255.0f;
-        sampleDisplay.pixelData[x + 264 * (clipVol + 60)].b = gui.uiColors[35] * 255.0f;
-        sampleDisplay.pixelData[x + 264 * (60 - clipVol)].r = gui.uiColors[33] * 255.0f;
-        sampleDisplay.pixelData[x + 264 * (60 - clipVol)].g = gui.uiColors[34] * 255.0f;
-        sampleDisplay.pixelData[x + 264 * (60 - clipVol)].b = gui.uiColors[35] * 255.0f;
+
     }
 
     
@@ -1376,19 +1362,44 @@ void DrawSampleDisplay()
 void DrawEnvelopeDisplay()
 {
 
+    int otherOp = 0;
+    if (sampleDisplay.selectedOperator == 0)
+        otherOp = 1;
 
     
+    int lastEnvAmp1 = int((float(loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelope[0]) / 255.0) * 40.0);
+    int lastEnvAmp2 = int((float(loadedInstruments[editor.selectedInstrument].waveforms[otherOp].envelope[0]) / 255.0) * 40.0);
+
     for (int x = 0; x < 264; x++)
     {
         float brightness = 1.0f;
 
 
-        int subdivision = int((float(x) / 264.0f) * 40.0f);
-        bool lighten = subdivision % 2 == 0;
+        int index = int((float(x) / 264.0) * 32.0);
+        int nextIndex = index + 1;
+        if (nextIndex >= 32)
+            nextIndex = 31;
+        bool lighten = index % 2 == 0;
+
+        float interp = ((float(x) / 264.0) * 32.0) - index;
+
+        /////////////////////////////////////////////////////////////
+
+        int envVal = int((float(loadedInstruments[editor.selectedInstrument].waveforms[otherOp].envelope[index]) / 255.0) * 40.0);
+        int envValNext = int((float(loadedInstruments[editor.selectedInstrument].waveforms[otherOp].envelope[nextIndex]) / 255.0) * 40.0);
+
+        int envAmp = envVal * (1.0f - interp) + envValNext * interp;
+
 
         for (int y = 0; y < 40; y++)
         {
-            if (lighten)
+            if ((y >= envAmp - 1 && y <= lastEnvAmp2) || (y <= envAmp && y >= lastEnvAmp2 - 1))
+            {
+                sampleDisplay.pixelData[x + 264 * y].r = gui.uiColors[6] * 255.0f;
+                sampleDisplay.pixelData[x + 264 * y].g = gui.uiColors[7] * 255.0f;
+                sampleDisplay.pixelData[x + 264 * y].b = gui.uiColors[8] * 255.0f;
+            }
+            else if (lighten)
             {
                 sampleDisplay.pixelData[x + 264 * y].r = gui.uiColors[3] * 255.0f;
                 sampleDisplay.pixelData[x + 264 * y].g = gui.uiColors[4] * 255.0f;
@@ -1401,145 +1412,21 @@ void DrawEnvelopeDisplay()
                 sampleDisplay.pixelData[x + 264 * y].b = gui.uiColors[2] * 255.0f;
             }
         }
-    }
+
+        lastEnvAmp2 = envAmp;
 
 
-    int otherOp = 0;
-    if (sampleDisplay.selectedOperator == 0)
-        otherOp = 1;
+        ///////////////////////////////////////////////
+
+        envVal = int((float(loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelope[index]) / 255.0) * 40.0);
+        envValNext = int((float(loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelope[nextIndex]) / 255.0) * 40.0);
+
+        envAmp = envVal * (1.0f - interp) + envValNext * interp;
 
 
-    // Draw the Unselected operator.
-    float amp = loadedInstruments[editor.selectedInstrument].waveforms[otherOp].envelopeStartAmp;
-    float nextAmp = amp;
-
-    int pos = 0;
-    int nextPos = 0;
-    int posIndex = 0;
-    int interpAmp = 0;
-    int lastAmp = 0;
-
-    for (int x = 0; x < 264; x++)
-    {
-        if (x > nextPos)
+        for (int y = 0; y < 40; y++)
         {
-
-
-            amp = nextAmp;
-            pos = nextPos;
-            if (posIndex < loadedInstruments[editor.selectedInstrument].waveforms[otherOp].envelopePoints.size())
-            {
-                nextPos = float(loadedInstruments[editor.selectedInstrument].waveforms[otherOp].envelopePoints[posIndex].position) * (264.0f / 40.0f);
-                nextAmp = loadedInstruments[editor.selectedInstrument].waveforms[otherOp].envelopePoints[posIndex].amp;
-                posIndex++;
-            }
-            else
-                nextPos = 264;
-
-        }
-
-        float interp = 0.0f;
-        if (nextPos > 0)
-            interp = float(x - pos) / float(nextPos - pos);
-
-        interpAmp = int((amp * (1.0f - interp) + nextAmp * interp) * 40);
-
-        if (interpAmp > 39)
-            interpAmp = 39;
-
-
-
-        if (interpAmp > lastAmp)
-        {
-            for (int y = lastAmp; y <= interpAmp; y++)
-            {
-                sampleDisplay.pixelData[x + 264 * y].r = gui.uiColors[6] * 255.0f;
-                sampleDisplay.pixelData[x + 264 * y].g = gui.uiColors[7] * 255.0f;
-                sampleDisplay.pixelData[x + 264 * y].b = gui.uiColors[8] * 255.0f;
-            }
-        }
-        else
-        {
-            for (int y = interpAmp; y <= lastAmp; y++)
-            {
-                sampleDisplay.pixelData[x + 264 * y].r = gui.uiColors[6] * 255.0f;
-                sampleDisplay.pixelData[x + 264 * y].g = gui.uiColors[7] * 255.0f;
-                sampleDisplay.pixelData[x + 264 * y].b = gui.uiColors[8] * 255.0f;
-            }
-        }
-
-
-        lastAmp = interpAmp;
-    }
-
-
-
-
-    // Draw the Selected operator.
-    amp = loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelopeStartAmp;
-    nextAmp = amp;
-
-    pos = 0;
-    nextPos = 0;
-    posIndex = 0;
-    interpAmp = 0;
-    lastAmp = 0;
-
-    for (int x = 0; x < 264; x++)
-    {
-        if (x > nextPos)
-        {
-            
-
-            amp = nextAmp;
-            pos = nextPos;
-            if (posIndex < loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelopePoints.size())
-            {
-                nextPos = float(loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelopePoints[posIndex].position) * (264.0f / 40.0f);
-                nextAmp = loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelopePoints[posIndex].amp;
-                posIndex++;
-            }
-            else
-                nextPos = 264;
-
-            float interp = float(x - pos) / float(nextPos - pos);
-            int y = int((amp * (1.0f - interp) + nextAmp * interp) * 40);
-
-            for (int a = -2; a < 2; a++)
-            {
-                for (int b = -2; b < 2; b++)
-                {
-                    if (x + a >= 0 && x + a < 264 && y + b >= 0 && y + b < 80)
-                    {
-                        sampleDisplay.pixelData[x + a + 264 * (y + b)].r = gui.uiColors[51] * 255.0f;
-                        sampleDisplay.pixelData[x + a + 264 * (y + b)].g = gui.uiColors[52] * 255.0f;
-                        sampleDisplay.pixelData[x + a + 264 * (y + b)].b = gui.uiColors[53] * 255.0f;
-                    }
-                }
-            }
-        }
-
-        float interp = 0.0f;
-        if (nextPos > 0)
-            interp = float(x - pos) / float(nextPos - pos);
-
-        interpAmp = int((amp * (1.0f - interp) + nextAmp * interp) * 40);
-
-        if (interpAmp > 39)
-            interpAmp = 39;
-
-        if (interpAmp > lastAmp)
-        {
-            for (int y = lastAmp; y <= interpAmp; y++)
-            {
-                sampleDisplay.pixelData[x + 264 * y].r = gui.uiColors[48] * 255.0f;
-                sampleDisplay.pixelData[x + 264 * y].g = gui.uiColors[49] * 255.0f;
-                sampleDisplay.pixelData[x + 264 * y].b = gui.uiColors[50] * 255.0f;
-            }
-        }
-        else
-        {
-            for (int y = interpAmp; y <= lastAmp; y++)
+            if ((y >= envAmp - 1 && y <= lastEnvAmp1) || (y <= envAmp && y >= lastEnvAmp1 - 1))
             {
                 sampleDisplay.pixelData[x + 264 * y].r = gui.uiColors[48] * 255.0f;
                 sampleDisplay.pixelData[x + 264 * y].g = gui.uiColors[49] * 255.0f;
@@ -1547,14 +1434,11 @@ void DrawEnvelopeDisplay()
             }
         }
 
-
-        lastAmp = interpAmp;
+        lastEnvAmp1 = envAmp;
     }
-
-    
-
 
     return;
+
 }
 
 
