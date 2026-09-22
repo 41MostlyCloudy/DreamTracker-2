@@ -68,20 +68,21 @@ struct EnvelopePoint
 
 
 
+struct Waveform
+{
+	float pcmFrames[183];
+};
+
+
+
+
 struct InstrumentWave
 {
-	// Wave types: Sine, Square, Triangle, Saw, Noise, Wave A, Wave B
+	// Wave types: Sine, Square, Triangle, Saw
 	int waveType = 0;
 
-	float pcmFrames[183];
 
-	// The duty cycle.
-	float dutyCycle = 0.5f;
-	float smoothness = 0.0f; // Smoothness
-	int numOfSineWaves = 15;
 	float offset = 0.5f; // Offsets the wave volume from center = 0.5f.
-
-	int noiseSeed = 1; // Only for noise.
 
 	float release = 0.0f;
 
@@ -94,12 +95,7 @@ struct InstrumentWave
 
 
 	// Boolean flags
-	bool generateFromSines = false; // The square and saw waves can be generated from sine waves for a slightly different sound.
 	bool noSustain = false;
-	bool pitchToNote = true;
-	bool mirror = false;
-
-
 
 
 	int envelope[32] = { 0 };

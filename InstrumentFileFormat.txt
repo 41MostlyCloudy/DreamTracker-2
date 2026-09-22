@@ -24,22 +24,9 @@ For all 8 arp values:
 
 For all 2 waves:
 	|
-	| For all 183 frames:
-	|	|
-	|	| (1 byte) Frame value
-	|	|
-	|
-	| (1 byte) Duty cycle
-	|
-	| (1 byte) Smoothness
-	|
 	| (1 byte) Noise Volume
 	|
-	| (1 byte) Number of sine waves (for sine approx. wave types)
-	|
 	| (1 byte) Wave type
-	|
-	| (1 byte) Noise seed (if using noise wave type)
 	|
 	| (1 byte) Offset + Octave
 	|
@@ -57,17 +44,6 @@ For all 2 waves:
 	|	| (1 byte) Amplitude
 	|	|
 	|
-	|
-	| (1 byte) Envelope starting amp (DELETE)
-	|
-	| (1 byte) Number of envelope points (DELETE)
-	|
-	| For all points: (DELETE)
-	|	|
-	|	| (1 byte) Point position
-	|	|
-	|	| (1 byte) Point amplitude
-	|	|
 	|
 	|
 	|

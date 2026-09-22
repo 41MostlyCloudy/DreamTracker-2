@@ -18,6 +18,10 @@ float delta = 0.0f; // Time between frames.
 
 
 
+// Waveforms: Sine, Square, Triangle, Saw
+Waveform waveForms[4];
+
+
 Channel channels[8];
 
 Screen screen;
@@ -28,7 +32,7 @@ WindowController windowController;
 Song loadedSong;
 UnrolledPattern loadedPattern; // The frame currently in the editor.
 std::vector <std::string> fileNameList; // The names of the samples in the "Samples" file.
-Instrument loadedInstruments[256]; // The samples used in the song.
+Instrument loadedInstruments[16]; // The samples used in the song.
 
 UnrolledPattern patternSelection; // A frame containing the portion of the frame that is selected, with that number of rows. All values not used are set to -2.
 

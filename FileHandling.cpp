@@ -33,11 +33,11 @@ void SaveCurrentInstrument();
 
 void LoadCurrentInstrument(std::string name);
 
-void SaveCurrentSample();
-
 void LoadOscilloscopeNumbers();
 
 void ClearSong();
+
+void CreateWaveforms();
 
 
 
@@ -262,6 +262,7 @@ void SaveSong() // Save the currently loaded song.
 
 void LoadSong(std::string name) // Load the song file with the given name.
 {
+    
 
     if (loadedSong.unsavedChanges)
     {
@@ -433,6 +434,7 @@ void LoadSong(std::string name) // Load the song file with the given name.
         ////////////////////// SAMPLES
         
 
+
         for (int i = 0; i < 2; i++)
         {
             uint8_t enabled;
@@ -517,6 +519,7 @@ void LoadSong(std::string name) // Load the song file with the given name.
         StartOrStopSong();
         StartOrStopSong();
     }
+
 
     return;
 }
@@ -700,45 +703,15 @@ void WriteInstrument(std::ofstream* instrumentFile, Instrument* instrument)
     // For each used sample.
     for (int j = 0; j < 2; j++)
     {
-        for (int fr = 0; fr < 183; fr++)
-        {
-            float scaledFrame = ((instrument->waveforms[j].pcmFrames[fr] * 128.0f) + 128.0f);
-            if (scaledFrame > 255.0f) scaledFrame = 255.0f;
-            else if (scaledFrame < 0.0f) scaledFrame = 0.0f;
-            uint8_t frameVal = uint8_t(scaledFrame);
-            instrumentFile->write((char*)&frameVal, 1);
-        }
-        /*
-        for (int env = 0; env < 32; env++)
-        {
-            uint8_t envVal = uint8_t(instrument->waveforms[j].envelope[env]);
-            instrumentFile->write((char*)&envVal, 1);
-        }*/
-
-
 
         uint8_t waveVar = 0;
 
-        waveVar = int(instrument->waveforms[j].dutyCycle * 16.0f);
-        instrumentFile->write((char*)&waveVar, 1);
-        waveVar = int(instrument->waveforms[j].smoothness * 16.0f);
-        instrumentFile->write((char*)&waveVar, 1);
         waveVar = int(instrument->waveforms[j].noiseVolume * 16.0f);
         instrumentFile->write((char*)&waveVar, 1);
-        waveVar = instrument->waveforms[j].numOfSineWaves;
-        instrumentFile->write((char*)&waveVar, 1);
-
 
 
         waveVar = instrument->waveforms[j].waveType;
         instrumentFile->write((char*)&waveVar, 1);
-
-
-        if (waveVar == 4) // If using noise
-        {
-            waveVar = instrument->waveforms[j].noiseSeed;
-            instrumentFile->write((char*)&waveVar, 1);
-        }
 
 
         if (instrument->waveforms[j].offset > 0.9375f) instrument->waveforms[j].offset = 0.9375f;
@@ -751,7 +724,7 @@ void WriteInstrument(std::ofstream* instrumentFile, Instrument* instrument)
 
 
         // Boolean flags
-        waveVar = 0 * 128.0f + 0 * 64.0f + 0 * 32.0f + (int)instrument->waveforms[j].generateFromSines * 16.0f + 0 * 8.0f + (int)instrument->waveforms[j].noSustain * 4.0f + (int)instrument->waveforms[j].pitchToNote * 2.0f + (int)instrument->waveforms[j].mirror;
+        waveVar = 0 * 128.0f + 0 * 64.0f + 0 * 32.0f + 0.0f * 16.0f + 0 * 8.0f + (int)instrument->waveforms[j].noSustain * 4.0f + 0.0f * 2.0f + 0.0f;
         instrumentFile->write((char*)&waveVar, 1);
 
 
@@ -838,45 +811,15 @@ Instrument ReadInstrument(std::ifstream* instrumentFile)
     // For each used wave.
     for (int j = 0; j < 2; j++)
     {
-        for (int fr = 0; fr < 183; fr++)
-        {
-            int frameVal = 0;
-            instrumentFile->read((char*)&frameVal, 1);
-            float scaledFrame = float(frameVal) - 128.0f;
-            scaledFrame /= 128.0f;
-            newInstrument.waveforms[j].pcmFrames[fr] = scaledFrame;
-        }
-        /*
-        for (int env = 0; env < 32; env++)
-        {
-            int envVal = 0;
-            instrumentFile->read((char*)&envVal, 1);
-            newInstrument.waveforms[j].envelope[env] = envVal;
-        }*/
-
-
 
         uint8_t waveVar = 0;
 
         instrumentFile->read((char*)&waveVar, 1);
-        newInstrument.waveforms[j].dutyCycle = float(waveVar) / 16.0f;
-        instrumentFile->read((char*)&waveVar, 1);
-        newInstrument.waveforms[j].smoothness = float(waveVar) / 16.0f;
-        instrumentFile->read((char*)&waveVar, 1);
         newInstrument.waveforms[j].noiseVolume = float(waveVar) / 16.0f;
-        instrumentFile->read((char*)&waveVar, 1);
-        newInstrument.waveforms[j].numOfSineWaves = float(waveVar);
 
 
         instrumentFile->read((char*)&readVar, 1);
         newInstrument.waveforms[j].waveType = readVar;
-
-
-        if (readVar == 4) // If using noise
-        {
-            instrumentFile->read((char*)&waveVar, 1);
-            newInstrument.waveforms[j].noiseSeed = float(waveVar);
-        }
 
 
         instrumentFile->read((char*)&readVar, 1);
@@ -908,11 +851,11 @@ Instrument ReadInstrument(std::ifstream* instrumentFile)
         //newInstrument.waveforms[j].loop = (bool)varH;
         //newInstrument.waveforms[j].useArp = (bool)varG;
         //newInstrument.waveforms[j].invertStereo = (bool)varF;
-        newInstrument.waveforms[j].generateFromSines = (bool)varE;
+        //newInstrument.waveforms[j].generateFromSines = (bool)varE;
         //newInstrument.waveforms[j].reverseFrames = (bool)varD;
         newInstrument.waveforms[j].noSustain = (bool)varC;
-        newInstrument.waveforms[j].pitchToNote = (bool)varB;
-        newInstrument.waveforms[j].mirror = (bool)varA;
+        //newInstrument.waveforms[j].pitchToNote = (bool)varB;
+        //newInstrument.waveforms[j].mirror = (bool)varA;
 
 
 
@@ -997,38 +940,6 @@ void LoadCurrentInstrument(std::string name)
 
 
 
-
-
-
-
-void SaveCurrentSample()
-{
-    ma_encoder_config sampleEncoderConfig;
-    ma_encoder sampleEncoder;
-
-    sampleEncoderConfig = ma_encoder_config_init(ma_encoding_format_wav, ma_format_f32, 1, 48000);
-
-
-    std::string fileName = fileNavigator.currentFilePath.std::filesystem::path::string() + "/" + loadedInstruments[editor.selectedInstrument].name + ".wav";
-    const char* name = &fileName[0];
-    ma_encoder_init_file(name, &sampleEncoderConfig, &sampleEncoder);
-
-
-    float framesToWrite = 183;
-    float* pOutputF32 = loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].pcmFrames;
-    ma_uint64 framesWritten;
-    ma_encoder_write_pcm_frames(&sampleEncoder, pOutputF32, framesToWrite, &framesWritten); // Write frames to file.
-
-    ma_encoder_uninit(&sampleEncoder);
-
-
-
-
-    return;
-}
-
-
-
 void LoadOscilloscopeNumbers()
 {
     std::string numPath = fileNavigator.getRelativePath() + "/GUI/DisplayNumbers.png";
@@ -1076,7 +987,7 @@ void LoadOscilloscopeNumbers()
 void ClearSong()
 {
     // Reset samples.
-    for (int i = 0; i < 256; i++)
+    for (int i = 0; i < 16; i++)
     {
         if (loadedInstruments[i].enabled)
         {
@@ -1084,8 +995,6 @@ void ClearSong()
             loadedInstruments[i] = emptyinstrument;
             for (int wave = 0; wave < 2; wave++)
             {
-                for (int fr = 0; fr < 183; fr++)
-                    loadedInstruments[i].waveforms[wave].pcmFrames[fr] = { 0.0f };
                 for (int env = 0; env < 32; env++)
                     loadedInstruments[i].waveforms[wave].envelope[env] = 255;
             }
@@ -1104,6 +1013,44 @@ void ClearSong()
     // Reset channel patterns.
     for (int ch = 0; ch < 8; ch++)
         loadedSong.channelPatterns[ch].patterns.clear();
+
+    return;
+}
+
+
+
+void CreateWaveforms()
+{
+    int length = 183;
+
+    for (int x = 0; x < length; x++) // Sine
+        waveForms[0].pcmFrames[x] = sin((float(x) / float(length)) * 6.28312);
+
+
+    for (int x = 0; x < length; x++) // Square
+    {
+        if (x < float(length) / 2.0f)
+            waveForms[1].pcmFrames[x] = 1.0f;
+        else
+            waveForms[1].pcmFrames[x] = -1.0f;
+    }
+
+
+    for (int x = 0; x < length; x++) // Triangle
+    {
+        float halfLen = float(length) * 0.5f;
+
+        if (x < float(length) / 2.0f)
+            waveForms[2].pcmFrames[x] = ((float(x) / halfLen) * 2.0f) - 1.0f;
+        else
+            waveForms[2].pcmFrames[x] = 1.0f - (((float(x) - halfLen) / halfLen) * 2.0f);
+    }
+
+
+    for (int x = 0; x < length; x++) // Saw
+        waveForms[3].pcmFrames[x] = ((float(x) / length) * 2.0f) - 1.0f;
+
+
 
     return;
 }

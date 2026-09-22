@@ -291,6 +291,9 @@ void RunEngine()
 
 
 
+    CreateWaveforms(); // Load the waveforms.
+
+
     LoadOscilloscopeNumbers(); // Load numbers for oscilloscope displays.
 
 
@@ -1951,8 +1954,6 @@ void pressButton(GLFWwindow* window)
                         Instrument emptyinstrument;
                         for (int wave = 0; wave < 2; wave++)
                         {
-                            for (int fr = 0; fr < 183; fr++)
-                                emptyinstrument.waveforms[wave].pcmFrames[fr] = { 0.0f };
                             for (int env = 0; env < 32; env++)
                                 emptyinstrument.waveforms[wave].envelope[env] = 255;
                         }
@@ -1970,8 +1971,6 @@ void pressButton(GLFWwindow* window)
                         Instrument emptyinstrument;
                         for (int wave = 0; wave < 2; wave++)
                         {
-                            for (int fr = 0; fr < 183; fr++)
-                                emptyinstrument.waveforms[wave].pcmFrames[fr] = { 0.0f };
                             for (int env = 0; env < 32; env++)
                                 emptyinstrument.waveforms[wave].envelope[env] = 255;
                         }

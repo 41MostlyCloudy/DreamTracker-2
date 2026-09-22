@@ -28,13 +28,6 @@ void DrawEnvelopeDisplay();
 
 void DrawOscilloscope(int channel);
 
-void GenerateAdditiveWave(Instrument* instrument, int op);
-
-void GenerateAllInstrumentWaves(Instrument* instrument);
-
-void ConstructWave(Instrument* instrument, int op, int waveType, int frequencies[16], float framesToWrite, float periodLength, int frequency, float* inputWave);
-
-
 
 
 
@@ -86,9 +79,7 @@ void readModulator(float* pOutputF32, ma_uint64 frameCount, int channel, int op,
     
 
 
-    float notePitch = 1.0f;
-    if (loadedInstruments[channels[channel].instrument].waveforms[op].pitchToNote)
-        notePitch = channels[channel].pitch * channels[channel].arpPitch;
+    float notePitch = channels[channel].pitch * channels[channel].arpPitch;
 
 
     
@@ -157,14 +148,7 @@ void readModulator(float* pOutputF32, ma_uint64 frameCount, int channel, int op,
 
 
 
-
-
-        
-
-        if (loadedInstruments[channels[channel].instrument].waveforms[op].pitchToNote)
-            notePitch = channels[channel].pitch;
-        else
-            notePitch = 1.0;
+        notePitch = channels[channel].pitch;
 
 
         
@@ -187,8 +171,7 @@ void readModulator(float* pOutputF32, ma_uint64 frameCount, int channel, int op,
             channels[channel].arpPitch = arpNote;
         }
 
-        if (loadedInstruments[channels[channel].instrument].waveforms[op].pitchToNote)
-            notePitch *= channels[channel].arpPitch;
+        notePitch *= channels[channel].arpPitch;
 
 
 
@@ -224,22 +207,6 @@ void readModulator(float* pOutputF32, ma_uint64 frameCount, int channel, int op,
                 channels[channel].waveforms[op].sampleReadPos = mapPos;
                 notePitch = 0.0f;
             }
-            else if (loadedInstruments[channels[channel].instrument].modulationType == 4) // Apply delay.
-            {
-                float delayIndex = channels[channel].waveforms[op].sampleReadPos + mod[i] * 100.0f * modStrength * 4.0f;
-
-                while (delayIndex < 0) delayIndex += (183);
-                while (delayIndex >= 183) delayIndex -= (183);
-
-                ma_uint32 dIndex1 = delayIndex;
-                ma_uint32 dIndex2 = delayIndex + 1;
-
-                float t2 = delayIndex - dIndex1;  // Fractional part
-                if (dIndex2 >= 183)
-                    dIndex2 = 0;
-
-                frameVol += loadedInstruments[channels[channel].instrument].waveforms[op].pcmFrames[dIndex1] * (1.0f - t2) + loadedInstruments[channels[channel].instrument].waveforms[op].pcmFrames[dIndex2] * t2;
-            }
         }
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////// Read frame data.
@@ -250,18 +217,33 @@ void readModulator(float* pOutputF32, ma_uint64 frameCount, int channel, int op,
             channels[channel].waveforms[op].sampleReadPos += 183;
 
 
-        float readIndex = int(channels[channel].waveforms[op].sampleReadPos);
-        int index1 = int(readIndex);
-        int index2 = int(readIndex) + 1;
         
 
-        float t = channels[channel].waveforms[op].sampleReadPos - index1;  // Fractional part
+
+        for (int freq = 0; freq < 8; freq++)
+        {
+            float readIndex = channels[channel].waveforms[op].sampleReadPos * float(freq + 1);
+            int index1 = int(readIndex);
+            int index2 = int(readIndex) + 1;
+
+            float t = readIndex - index1;  // Fractional part
+
+            while (index1 >= 183)
+                index1 -= 183;
+            while (index2 >= 183)
+                index2 -= 183;
 
 
-        if (index2 >= 183)
-            index2 = 0;
+            float freqVol = waveForms[loadedInstruments[channels[channel].instrument].waveforms[op].waveType].pcmFrames[index1] * (1.0f - t)
+                + waveForms[loadedInstruments[channels[channel].instrument].waveforms[op].waveType].pcmFrames[index2] * t;
 
-        frameVol += loadedInstruments[channels[channel].instrument].waveforms[op].pcmFrames[index1] * (1.0f - t) + loadedInstruments[channels[channel].instrument].waveforms[op].pcmFrames[index2] * t;
+            freqVol *= float(loadedInstruments[channels[channel].instrument].waveforms[op].frequencies[freq]) / 64.0f;
+
+            frameVol += freqVol;
+        }
+
+
+        frameVol += (loadedInstruments[channels[channel].instrument].waveforms[op].offset * 2.0f) - 1.0f;
 
         
 
@@ -1220,7 +1202,7 @@ void DrawSampleDisplay()
         otherOp = 1;
     
     // Draw the unselected operator.
-    float lastFrameVal = int(loadedInstruments[editor.selectedInstrument].waveforms[otherOp].pcmFrames[0] * 20.0f) + 60.0f;
+    float lastFrameVal = int(waveForms[loadedInstruments[editor.selectedInstrument].waveforms[otherOp].waveType].pcmFrames[0] * 20.0f) + 60.0f;
 
 
     for (int x = 0; x < 264; x++)
@@ -1231,7 +1213,7 @@ void DrawSampleDisplay()
         if (frameIndex >= 183)
             break;
 
-        int frameVal = int(loadedInstruments[editor.selectedInstrument].waveforms[otherOp].pcmFrames[frameIndex] * 20.0f) + 60.0f;
+        int frameVal = int(waveForms[loadedInstruments[editor.selectedInstrument].waveforms[otherOp].waveType].pcmFrames[frameIndex] * 20.0f) + 60.0f;
 
 
 
@@ -1275,7 +1257,7 @@ void DrawSampleDisplay()
 
     // Draw the selected operator.
 
-    lastFrameVal = int(loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].pcmFrames[0] * 20.0f) + 60.0f;
+    lastFrameVal = int(waveForms[loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].waveType].pcmFrames[0] * 20.0f) + 60.0f;
 
     for (int x = 0; x < 528; x++)
     {
@@ -1285,7 +1267,7 @@ void DrawSampleDisplay()
         if (frameIndex >= 183)
             break;
 
-        int frameVal = int(loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].pcmFrames[frameIndex] * 20.0f) + 60.0f;
+        int frameVal = int(waveForms[loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].waveType].pcmFrames[frameIndex] * 20.0f) + 60.0f;
 
         if (frameVal > 79)
             frameVal = 79;
@@ -1503,500 +1485,4 @@ void DrawOscilloscope(int channel)
 }
 
 
-
-void GenerateAdditiveWave(Instrument* instrument, int op)
-{
-    
-    if (!instrument->enabled) // Create a new sample.
-    {
-        instrument->enabled = true;
-    }
-
-
-    if (instrument->waveforms[op].waveType == 4) // Generate noise
-    {
-
-        float scale = instrument->waveforms[op].numOfSineWaves;
-
-
-        // Create base noise frequency.
-        srand(instrument->waveforms[op].noiseSeed);
-
-        float noiseVol1 = float((rand() % 256) - 127) / 128.0f;
-        float noiseVol2 = float((rand() % 256) - 127) / 128.0f;
-        float index = 0.0f;
-
-
-        float newFrames[183];
-
-
-        for (int x = 0; x < 183; x++)
-        {
-
-            float toAdd = (1.0f / 183.0f) * (scale * 4.0f);
-
-            if (int(index + toAdd) != int(index))
-            {
-                noiseVol1 = noiseVol2;
-                noiseVol2 = float((rand() % 256) - 127) / 128.0f;
-
-                // Move back to the first frame if at the end of the sample.
-
-                if (x + (1.0f / toAdd) * 2.0f >= 183)
-                {
-                    noiseVol2 = newFrames[0];
-                }
-            }
-
-            index += toAdd;
-            float interp = index - int(index);
-
-            float interpVol = noiseVol1 * (1.0f - interp) + noiseVol2 * interp;
-
-
-            newFrames[x] = interpVol;
-        }
-
-
-
-        // Copy it to create overtones.
-        for (int fr = 0; fr < 183; fr++)
-        {
-            instrument->waveforms[op].pcmFrames[fr] = 0.0f;
-
-            for (int wave = 0; wave < 8; wave++)
-            {
-                if (instrument->waveforms[op].frequencies[wave] > 0)
-                {
-                    int interpFrame = fr * (wave + 1);
-                    while (interpFrame >= 183)
-                        interpFrame -= 183;
-
-                    instrument->waveforms[op].pcmFrames[fr] += newFrames[interpFrame] * instrument->waveforms[op].frequencies[wave] * 0.07 * 0.25f;
-                }
-            }
-        }
-
-
-
-    }
-    else
-    {
-
-
-        for (int fr = 0; fr < 183; fr++)
-            instrument->waveforms[op].pcmFrames[fr] = 0.0f;
-
-        for (int freq = 0; freq < 8; freq++)
-        {
-            float waveSize = ((1.0f / (freq + 1.0f)) * 48000.0f) / 261.625f;
-            waveSize *= 2.0f;
-
-
-            if (instrument->waveforms[op].frequencies[freq] != 0)
-                ConstructWave(instrument, op, instrument->waveforms[op].waveType, instrument->waveforms[op].frequencies, 183, waveSize, freq, instrument->waveforms[op].pcmFrames);
-        }
-    }
-
-    for (int x = 0; x < 183; x++)
-    {
-        instrument->waveforms[op].pcmFrames[x] += (instrument->waveforms[op].offset - 0.5f) * 2.0f;
-        if (instrument->waveforms[op].pcmFrames[x] > 0.85f) instrument->waveforms[op].pcmFrames[x] = 0.85f;
-        else if (instrument->waveforms[op].pcmFrames[x] < -0.85f) instrument->waveforms[op].pcmFrames[x] = -0.85f;
-    }
-
-
-    
-    
-
-    
-    
-
-
-
-
-
-
-
-    int len = 183;
-
-    
-
-    // Duty cycle
-    float duty = instrument->waveforms[op].dutyCycle; // Length of left size.
-
-    if (duty != 0.5f)
-    {
-        // Stretch left side.
-        std::vector <float> newFr;
-
-        for (int fr = 0; fr < len * duty; fr++)
-        {
-            int pos = (fr / duty) / 2.0f;
-            float posF = (float(fr) / duty) / 2.0f;
-            float interp = posF - pos;
-
-            float amp;
-            if (fr == len - 1)
-                amp = instrument->waveforms[op].pcmFrames[pos] * (1.0f - interp) + instrument->waveforms[op].pcmFrames[0] * interp;
-            else
-                amp = instrument->waveforms[op].pcmFrames[pos] * (1.0f - interp) + instrument->waveforms[op].pcmFrames[pos + 1] * interp;
-
-            newFr.emplace_back(amp);
-        }
-
-        // Stretch right side.
-        for (int fr = 0; fr < len * (1.0f - duty); fr++)
-        {
-            int pos = (len / 2.0f) + (fr / (1.0f - duty)) / 2.0f;
-            float posF = (float(len) / 2.0f) + (float(fr) / (1.0f - duty)) / 2.0f;
-            float interp = posF - pos;
-
-            float amp;
-            if (pos == len - 1)
-                amp = instrument->waveforms[op].pcmFrames[pos] * (1.0f - interp) + instrument->waveforms[op].pcmFrames[0] * interp;
-            else
-                amp = instrument->waveforms[op].pcmFrames[pos] * (1.0f - interp) + instrument->waveforms[op].pcmFrames[pos + 1] * interp;
-
-            newFr.emplace_back(amp);
-        }
-
-
-
-        for (int fr = 0; fr < len; fr++)
-        {
-            instrument->waveforms[op].pcmFrames[fr] = newFr[fr];
-        }
-    }
-    
-
-    // Apply mirror.
-    if (instrument->waveforms[op].mirror)
-    {
-        for (int fr = 0; fr < 91; fr++)
-        {
-            instrument->waveforms[op].pcmFrames[fr] = instrument->waveforms[op].pcmFrames[fr * 2];
-        }
-        instrument->waveforms[op].pcmFrames[91] = instrument->waveforms[op].pcmFrames[90];
-        for (int fr = 0; fr < 91; fr++)
-        {
-            instrument->waveforms[op].pcmFrames[182 - fr] = instrument->waveforms[op].pcmFrames[fr];
-        }
-    }
-    
-
-
-
-    return;
-}
-
-
-
-void ConstructWave(Instrument* instrument, int op, int waveType, int frequencies[16], float framesToWrite, float periodLength, int frequency, float* inputWave)
-{
-    float periodLen = periodLength;
-
-
-    
-
-
-    for (int x = 0; x < framesToWrite; x++)
-    {
-        if (waveType == -1) // Empty wave
-        {
-            inputWave[x] += 1.0f;
-        }
-        else if (waveType == 0) // Sine wave
-        {
-            float vol = 0;
-
-            float waveLen = float(periodLen * 0.5f);
-            float periodPos = float(x);
-            while (periodPos > waveLen)
-                periodPos -= waveLen;
-            periodPos /= waveLen;
-
-            vol += sin(float(x) * 2.0f * 6.28312 / periodLen) * frequencies[frequency] * 0.07f * 0.25f;
-
-
-            inputWave[x] += vol;
-        }
-        else if (waveType == 1) // Square wave
-        {
-            float vol = 0;
-
-            float duty = 0.5f;
-
-            if (instrument->waveforms[op].generateFromSines)
-            {
-                float waveLen = float(periodLen * 0.5f);
-                float periodPos = float(x);
-                while (periodPos > waveLen)
-                    periodPos -= waveLen;
-                periodPos /= waveLen;
-
-                bool addSign = true;
-                for (int w = 1; w < instrument->waveforms[op].numOfSineWaves * 2; w += 2)
-                {
-                    vol += (sin(periodPos * float(w) * 6.283f) * frequencies[frequency] * 0.07f * 0.25f) / float(w);
-                }
-            }
-            else
-            {
-                float round = instrument->waveforms[op].smoothness;
-
-                float waveLen = float(periodLen * 0.5f);
-
-                float periodPos = float(x);
-
-                while (periodPos > waveLen)
-                    periodPos -= waveLen;
-
-                periodPos /= waveLen;
-
-
-                float volume = 1.0f * frequencies[frequency] * 0.07f * 0.25f;
-
-
-                float c1 = round * (duty * 0.5f);
-                float c2 = duty - (round * (duty * 0.5f));
-                float c3 = duty;
-                float c4 = (round * ((1.0f - duty) * 0.5f)) + duty;
-                float c5 = 1.0f - (round * ((1.0f - duty) * 0.5f));
-
-                // Rounded corners
-                if (periodPos < c1) // corner
-                {
-                    float x1 = periodPos - c1;
-                    float r1 = c1;
-                    float yVal = sqrt((r1 * r1) - (x1 * x1));
-                    yVal *= 1.0f * (round * volume) / r1;
-                    yVal += volume - (round * volume);
-                    vol += yVal;
-                }
-                else if (periodPos <= c2) // flat
-                {
-                    vol += volume;
-                }
-                else if (periodPos < c3) // corner
-                {
-                    float x1 = periodPos - c2;
-                    float r1 = c1;
-                    float yVal = sqrt((r1 * r1) - (x1 * x1));
-                    yVal *= 1.0f * (round * volume) / r1;
-                    yVal += volume - (round * volume);
-                    vol += yVal;
-                }
-                else if (periodPos < c4) // corner
-                {
-                    float x1 = periodPos - c4;
-                    float r1 = c4 - duty;
-                    float yVal = sqrt((r1 * r1) - (x1 * x1));
-                    yVal *= 1.0f * (round * volume) / r1;
-                    yVal += volume - (round * volume);
-                    vol -= yVal;
-                }
-                else if (periodPos <= c5) // flat
-                {
-                    vol -= volume;
-                }
-                else // corner
-                {
-                    float x1 = periodPos - c5;
-                    float r1 = 1.0f - c5;
-                    float yVal = sqrt((r1 * r1) - (x1 * x1));
-                    yVal *= 1.0f * (round * volume) / r1;
-                    yVal += volume - (round * volume);
-                    vol -= yVal;
-                }
-            }
-
-
-            inputWave[x] += vol;
-        }
-        else if (waveType == 2) // Triangle wave
-        {
-            float vol = 0;
-
-            float waveLen = float(periodLen * 0.5f);
-            float periodPos = float(x);
-            while (periodPos > waveLen)
-                periodPos -= waveLen;
-            periodPos /= waveLen;
-
-            if (periodPos > 0.5)
-                vol -= float(periodPos - 0.5f - 0.25f) * frequencies[frequency] * 0.07f;
-            else
-                vol -= (0.25f - float(periodPos)) * frequencies[frequency] * 0.07f;
-
-            inputWave[x] += vol;
-        }
-        else if (waveType == 3) // Saw wave
-        {
-            float vol = 0;
-
-            
-            if (instrument->waveforms[op].generateFromSines)
-            {
-                float waveLen = float(periodLen * 0.5f);
-                float periodPos = float(x);
-                while (periodPos > waveLen)
-                    periodPos -= waveLen;
-                periodPos /= waveLen;
-
-
-                bool addSign = true;
-                for (int w = 1; w < instrument->waveforms[op].numOfSineWaves + 1; w++)
-                {
-                    if (addSign)
-                        vol += (sin(periodPos * float(w) * 6.283f) * frequencies[frequency] * 0.05f * 0.25f) / float(w);
-                    else
-                        vol -= (sin(periodPos * float(w) * 6.283f) * frequencies[frequency] * 0.05f * 0.25f) / float(w);
-                    addSign = !addSign;
-                }
-            }
-            else
-            {
-                float round = instrument->waveforms[op].smoothness * 0.5f;
-
-                float waveLen = float(periodLen * 0.5f);
-                float periodPos = float(x);
-                while (periodPos > waveLen)
-                    periodPos -= waveLen;
-                periodPos /= waveLen;
-
-                float amplitude = frequencies[frequency] * 0.15f * 0.25f;
-
-                // Approximate y in a Bezier curve.
-                if (periodPos < round)
-                {
-                    float t = 0.5f;
-                    float interval = 0.5f;
-                    for (int j = 0; j < 32; j++)
-                    {
-                        float estimate = (t * t) * round;
-                        interval *= 0.5f;
-
-                        float posInCurve = periodPos;
-
-                        if (estimate > posInCurve)
-                            t -= interval;
-                        else
-                            t += interval;
-                    }
-                    float roundedVol = -(t * t) * (amplitude * round + amplitude * 0.5f) + t * amplitude + amplitude * 0.5f;
-
-
-                    vol -= (roundedVol)-amplitude * 0.5f;
-                }
-                else if (periodPos > 1.0f - round)
-                {
-                    float t = 0.5f;
-                    float interval = 0.5f;
-                    for (int j = 0; j < 32; j++)
-                    {
-                        float estimate = 1.0f - round + 2 * round * t - (t * t) * round;
-                        interval *= 0.5f;
-
-                        float posInCurve = periodPos;
-
-                        if (estimate > posInCurve)
-                            t -= interval;
-                        else
-                            t += interval;
-                    }
-                    float roundedVol = -(t * t) * (amplitude * round + amplitude * 0.5f) + 2 * t * amplitude * round + amplitude - (amplitude * round);
-
-                    vol += (roundedVol)-amplitude * 0.5f;
-                }
-                else
-                {
-                    vol += (periodPos * amplitude) - amplitude * 0.5f;
-                }
-            }
-
-            inputWave[x] += vol;
-        }
-        else if (waveType == 5) // Wave A
-        {
-            float vol = 0;
-
-            
-            float waveLen = float(periodLen * 1.0f);
-            float periodPos = float(x);
-            while (periodPos > waveLen)
-                periodPos -= waveLen;
-            periodPos /= waveLen;
-
-            
-            bool addSign = true;
-            for (int w = 1; w < instrument->waveforms[op].numOfSineWaves * 4; w += 4)
-            {
-                if (addSign)
-                    vol += (sin(periodPos * float(w) * 6.283f) * frequencies[frequency] * 0.07f * 0.25f) / float(w);
-                else
-                    vol -= (sin(periodPos * float(w) * 6.283f) * frequencies[frequency] * 0.07f * 0.25f) / float(w);
-                addSign = !addSign;
-            }
-
-            inputWave[x] += vol;
-        }
-        else if (waveType == 6) // Wave B
-        {
-            float vol = 0;
-
-            float waveLen = float(periodLen * 0.5f);
-            float periodPos = float(x);
-            while (periodPos > waveLen)
-                periodPos -= waveLen;
-            periodPos /= waveLen;
-
-            
-
-
-            vol = sin(float(x) * 2.0f * 4.0f * 6.28312 / periodLen) * frequencies[frequency] * 0.02f * 0.25f;
-
-            if (periodPos < 0.25f)
-            {
-                float t = periodPos / 0.25f;
-                vol = -(frequencies[frequency] * 0.08f * 0.25f) * (1.0f - t);
-            }
-            else if (periodPos >= 0.5f && periodPos < 0.75f)
-            {
-                float t = (periodPos - 0.5f) / 0.25f;
-                vol = -(frequencies[frequency] * 0.08f * 0.25f) * (1.0f - t);
-            }
-
-
-
-            if (periodPos > 0.5f)
-                vol *= -1.0f;
-
-
-            inputWave[x] += vol;
-
-        }
-    }
-
-    
-
-
-
-
-
-    return;
-}
-
-
-
-void GenerateAllInstrumentWaves(Instrument *instrument)
-{
-    for (int wave = 0; wave < 4; wave++)
-    {
-        GenerateAdditiveWave(instrument, wave);
-    }
-    sampleDisplay.selectedOperator = 0;
-
-    return;
-}
 

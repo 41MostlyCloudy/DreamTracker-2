@@ -197,8 +197,6 @@ void ClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clickPos
 					SaveSong();
 				else if (wind->name == "Save Instrument")
 					SaveCurrentInstrument();
-				else
-					SaveCurrentSample();
 
 				// Refresh the preset menu and file menu.
 				presetMenu.NavigateToInstrumentType(presetMenu.categories[presetMenu.instrumentType]);
@@ -390,10 +388,9 @@ void ClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clickPos
 			// Change wave shape type
 			if (clickPos.y == 4)
 			{
-				if (clickPos.x > 1 && clickPos.x < 16)
+				if (clickPos.x > 1 && clickPos.x < 10)
 				{
 					loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].waveType = (clickPos.x - 2) / 2;
-					GenerateAdditiveWave(&loadedInstruments[editor.selectedInstrument], sampleDisplay.selectedOperator);
 					DrawSampleDisplay();
 					loadedSong.unsavedChanges = true;
 					return;
@@ -403,7 +400,7 @@ void ClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clickPos
 			// Change modulation type
 			if (clickPos.y == 21)
 			{
-				if (clickPos.x > 1 && clickPos.x < 12)
+				if (clickPos.x > 1 && clickPos.x < 10)
 				{
 					loadedInstruments[editor.selectedInstrument].modulationType = (clickPos.x - 2) / 2;
 					loadedSong.unsavedChanges = true;
@@ -414,15 +411,7 @@ void ClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clickPos
 			// Synth UI.
 			if (clickPos.x > 1 && clickPos.x < 13)
 			{
-				if (clickPos.y == 7 && (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].waveType == 1 || loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].waveType == 3)) // Toggle generate from sine waves.
-				{
-					loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].generateFromSines = !loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].generateFromSines;
-					GenerateAdditiveWave(&loadedInstruments[editor.selectedInstrument], sampleDisplay.selectedOperator);
-					DrawSampleDisplay();
-					loadedSong.unsavedChanges = true;
-					return;
-				}
-				else if (clickPos.y == 2) // Toggle editing modulator/carrier.
+				if (clickPos.y == 2) // Toggle editing modulator/carrier.
 				{
 					if (sampleDisplay.selectedOperator == 0)
 						sampleDisplay.selectedOperator = 1;
@@ -453,29 +442,7 @@ void ClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clickPos
 			
 
 
-			if (clickPos.y == 14) // Toggle mirror sample
-			{
-				if (clickPos.x == 8)
-				{
-					loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].mirror = !loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].mirror;
-					GenerateAdditiveWave(&loadedInstruments[editor.selectedInstrument], sampleDisplay.selectedOperator);
-					DrawSampleDisplay();
-				}
-
-				DrawSampleDisplay();
-				loadedSong.unsavedChanges = true;
-
-				return;
-			}
-			else if (clickPos.y == 12) // Toggle pitch to note
-			{
-				if (clickPos.x == 15)
-					loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].pitchToNote = !loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].pitchToNote;
-
-				DrawSampleDisplay();
-				loadedSong.unsavedChanges = true;
-			}
-			else if (clickPos.y == 16) // Toggle sustain forever
+			if (clickPos.y == 16) // Toggle sustain forever
 			{
 				if (clickPos.x == 6)
 				{
@@ -615,17 +582,7 @@ void ClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clickPos
 				gui.drawUIThisFrame = true;
 				gui.drawFrameThisFrame = true;
 			}
-			else if (clickPos.y == 8) // Save sample
-			{
-				windowController.windows.erase(windowController.windows.begin() + windowIndex);
-				windowController.windows.shrink_to_fit();
-
-				fileNavigator.NavigateToFile();
-				windowController.InitializeWindow("Save Sample", { int(gui.hoveredTile.x), int(gui.hoveredTile.y) }, { 40, 20 });
-				gui.drawUIThisFrame = true;
-				gui.drawFrameThisFrame = true;
-			}
-			else if (clickPos.y == 10) // Load
+			else if (clickPos.y == 8) // Load
 			{
 				windowController.windows.erase(windowController.windows.begin() + windowIndex);
 				windowController.windows.shrink_to_fit();
@@ -635,7 +592,7 @@ void ClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clickPos
 				gui.drawUIThisFrame = true;
 				gui.drawFrameThisFrame = true;
 			}
-			else if (clickPos.y == 12) // Export
+			else if (clickPos.y == 10) // Export
 			{
 				windowController.windows.erase(windowController.windows.begin() + windowIndex);
 				windowController.windows.shrink_to_fit();
@@ -744,70 +701,7 @@ void HoldClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clic
 
 			if (clickPos.x > 9 && clickPos.x < 18)
 			{
-				if (int(clickPos.y) == 5) // Edit duty cycle.
-				{
-					loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].dutyCycle = (float(int((clickPos.x - 9) * 2.0f)) / 16.0f);
-
-					if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].dutyCycle < 0.0f)
-						loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].dutyCycle = 0.0f;
-					if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].dutyCycle > 1.0f)
-						loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].dutyCycle = 1.0f;
-
-					GenerateAdditiveWave(&loadedInstruments[editor.selectedInstrument], sampleDisplay.selectedOperator);
-					DrawSampleDisplay();
-					loadedSong.unsavedChanges = true;
-
-					return;
-				}
-				else if (int(clickPos.y) == 6) // Edit smoothness / # of sine waves to generate.
-				{
-					if ((loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].generateFromSines // Waves
-						&& (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].waveType == 1
-							|| loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].waveType == 3))
-						|| (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].waveType > 3
-							&& loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].waveType != 7))
-					{
-						loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].numOfSineWaves = (float(int((clickPos.x - 9) * 2.0f)) / 16.0f) * 16;
-
-						if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].numOfSineWaves < 1)
-							loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].numOfSineWaves = 1;
-						if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].numOfSineWaves > 15)
-							loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].numOfSineWaves = 15;
-					}
-					else if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].waveType == 1 // Smoothness
-						|| loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].waveType == 3)
-					{
-						loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].smoothness = (float(int((clickPos.x - 9) * 2.0f)) / 16.0f);
-
-						if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].smoothness < 0.0f)
-							loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].smoothness = 0.0f;
-						if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].smoothness > 1.0f)
-							loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].smoothness = 1.0f;
-					}
-					loadedSong.unsavedChanges = true;
-					GenerateAdditiveWave(&loadedInstruments[editor.selectedInstrument], sampleDisplay.selectedOperator);
-					DrawSampleDisplay();
-
-					return;
-
-				}
-				else if (int(clickPos.y) == 7) // Edit noise seed.
-				{
-					if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].waveType == 4)
-					{
-						loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].noiseSeed = (float(int((clickPos.x - 9) * 2.0f)) / 16.0f) * 16;
-
-						if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].noiseSeed < 0)
-							loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].noiseSeed = 0;
-						if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].noiseSeed > 15)
-							loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].noiseSeed = 15;
-
-						loadedSong.unsavedChanges = true;
-						GenerateAdditiveWave(&loadedInstruments[editor.selectedInstrument], sampleDisplay.selectedOperator);
-						DrawSampleDisplay();
-					}
-				}
-				else if (int(clickPos.y) == 10) // Edit noise volume.
+				if (int(clickPos.y) == 10) // Edit noise volume.
 				{
 					loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].noiseVolume = (float(int((clickPos.x - 9) * 2.0f)) / 16.0f);
 
@@ -844,7 +738,6 @@ void HoldClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clic
 						loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].offset = 0.9375;
 
 					loadedSong.unsavedChanges = true;
-					GenerateAdditiveWave(&loadedInstruments[editor.selectedInstrument], sampleDisplay.selectedOperator);
 					DrawSampleDisplay();
 
 					return;
@@ -859,7 +752,6 @@ void HoldClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clic
 					else if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].release > 1.0f)
 						loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].release = 1.0f;
 
-					DrawSampleDisplay();
 					loadedSong.unsavedChanges = true;
 					return;
 				}
@@ -887,7 +779,6 @@ void HoldClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clic
 						loadedInstruments[editor.selectedInstrument].modScale = 0.9375;
 
 					loadedSong.unsavedChanges = true;
-					DrawSampleDisplay();
 					return;
 				}
 				else if (int(clickPos.y) == 23) // Set arp speed.
@@ -900,7 +791,6 @@ void HoldClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clic
 					else if (loadedInstruments[editor.selectedInstrument].arpSpeed > 16)
 						loadedInstruments[editor.selectedInstrument].arpSpeed = 16;
 
-					DrawSampleDisplay();
 					loadedSong.unsavedChanges = true;
 					return;
 				}
@@ -959,10 +849,6 @@ void HoldClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clic
 						if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].frequencies[int(clickPos.x) - 21 - 4] != newFreqVal)
 						{
 							loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].frequencies[int(clickPos.x) - 21 - 4] = newFreqVal;
-
-							// Update additive operator frequencies.
-							GenerateAdditiveWave(&loadedInstruments[editor.selectedInstrument], sampleDisplay.selectedOperator);
-							DrawSampleDisplay();
 
 
 							loadedSong.unsavedChanges = true;

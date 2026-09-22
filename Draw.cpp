@@ -2239,7 +2239,7 @@ void DrawFloatingWindow(FloatingWindow* wind)
 		DrawGUIText(" NO", wind->position.x + 8, wind->position.x + 12, wind->position.y + 9, 4, -1);
 		gui.activeUI[int(wind->position.x + 12)][int(wind->position.y + 9)].sprite = { 6, 26 };
 	}
-	else if (wind->name == "Save Song" || wind->name == "Save Instrument" || wind->name == "Save Sample" || wind->name == "Load File" || wind->name == "Export as .WAV")
+	else if (wind->name == "Save Song" || wind->name == "Save Instrument" || wind->name == "Load File" || wind->name == "Export as .WAV")
 	{
 		gui.activeUI[int(wind->position.x + 1)][int(wind->position.y + 1)].sprite = { 25, 5 };
 		DrawGUIText(fileNavigator.filePathName, wind->position.x + 2, wind->position.x + 40, wind->position.y + 1, 4, 2);
@@ -2462,6 +2462,8 @@ void DrawFloatingWindow(FloatingWindow* wind)
 		DrawGUIText("Offset:", wind->position.x + 1, wind->position.x + 10, wind->position.y + 13, 3, 0);
 		DrawHorizontalSlider(int(wind->position.x + 9), int(wind->position.x + 17), int(wind->position.y + 13), loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].offset);
 
+		gui.activeUI[int(wind->position.x + 12)][int(wind->position.y + 14)].sprite = { 8, 5 };
+		gui.activeUI[int(wind->position.x + 13)][int(wind->position.y + 14)].sprite = { 9, 5 };
 
 
 
@@ -2611,38 +2613,6 @@ void DrawFloatingWindow(FloatingWindow* wind)
 
 		
 
-		
-
-
-
-		// Pitch to note
-		if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].pitchToNote)
-		{
-			DrawGUIText("Pitch to Note:", wind->position.x + 1, wind->position.x + 16, wind->position.y + 12, 3, 0);
-			gui.activeUI[int(wind->position.x + 15)][int(wind->position.y + 12)].sprite = { 24, 6 };
-		}
-		else
-		{
-			DrawGUIText("Pitch to Note:", wind->position.x + 1, wind->position.x + 16, wind->position.y + 12, 2, 0);
-			gui.activeUI[int(wind->position.x + 15)][int(wind->position.y + 12)].sprite = { 23, 6 };
-		}
-
-
-
-
-
-
-		// Mirror
-		if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].mirror)
-		{
-			DrawGUIText("Mirror:", wind->position.x + 1, wind->position.x + 8, wind->position.y + 14, 3, 0);
-			gui.activeUI[int(wind->position.x + 8)][int(wind->position.y + 14)].sprite = { 24, 6 };
-		}
-		else
-		{
-			DrawGUIText("Mirror:", wind->position.x + 1, wind->position.x + 8, wind->position.y + 14, 2, 0);
-			gui.activeUI[int(wind->position.x + 8)][int(wind->position.y + 14)].sprite = { 23, 6 };
-		}
 
 
 		
@@ -2673,7 +2643,7 @@ void DrawFloatingWindow(FloatingWindow* wind)
 
 		
 		// Mod type menu
-		for (int i = 0; i < 5; i++)
+		for (int i = 0; i < 4; i++)
 		{
 			if (loadedInstruments[editor.selectedInstrument].modulationType == i)
 			{
@@ -2796,10 +2766,10 @@ void DrawFloatingWindow(FloatingWindow* wind)
 	}
 	else if (wind->name == "File")
 	{
-		std::string settingsText[6] = {
-			"NEW", "SAVE SONG", "SAVE INSTR.", "SAVE SAMPLE", "LOAD", "EXPORT"
+		std::string settingsText[5] = {
+			"NEW", "SAVE SONG", "SAVE INSTR.", "LOAD", "EXPORT"
 		};
-		for (int i = 0; i < 6; i++)
+		for (int i = 0; i < 5; i++)
 		{
 			DrawGUIText(settingsText[i], wind->position.x + 2, wind->position.x + 15, wind->position.y + 2 + i * 2, 4, -1);
 			gui.activeUI[int(wind->position.x + 1)][int(wind->position.y + 2 + i * 2)].sprite = { 5, 26 };
@@ -2987,7 +2957,7 @@ void DrawFloatingWindow(FloatingWindow* wind)
 
 void DrawWaveTypeButton(int type, int xVal, int yVal)
 {
-	for (int i = 0; i < 7; i++)
+	for (int i = 0; i < 4; i++)
 	{
 		if (type == i)
 		{
@@ -3003,45 +2973,6 @@ void DrawWaveTypeButton(int type, int xVal, int yVal)
 
 
 
-	
-	if (loadedInstruments[editor.selectedInstrument].enabled)
-	{
-
-
-		DrawGUIText("Duty:" + std::to_string(int(loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].dutyCycle * 100)), xVal - 2, xVal + 8, yVal + 1, 3, 0);
-		DrawHorizontalSlider(int(xVal + 6), int(xVal + 14), int(yVal + 1), loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].dutyCycle);
-
-		if (type > 3 && type != 6) // Bell
-		{
-			DrawGUIText("Waves:" + std::to_string(int(loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].numOfSineWaves)), xVal - 2, xVal + 8, yVal + 2, 3, 0);
-			DrawHorizontalSlider(int(xVal + 6), int(xVal + 14), int(yVal + 2), float(loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].numOfSineWaves) / 16.0f);
-		}
-		else if (type == 1 || type == 3)
-		{
-			if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].generateFromSines)
-			{
-				DrawGUIText("Waves:" + std::to_string(int(loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].numOfSineWaves)), xVal - 2, xVal + 8, yVal + 2, 3, 0);
-				DrawGUIText("FROM SINE", xVal, xVal + 9, yVal + 3, 4, -1);
-
-				DrawHorizontalSlider(int(xVal + 6), int(xVal + 14), int(yVal + 2), float(loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].numOfSineWaves) / 16.0f);
-			}
-			else
-			{
-				DrawGUIText("Soft:" + std::to_string(int(loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].smoothness * 100)), xVal - 2, xVal + 8, yVal + 2, 3, 0);
-				DrawGUIText("EXACT", xVal, xVal + 9, yVal + 3, 4, -1);
-
-				DrawHorizontalSlider(int(xVal + 6), int(xVal + 14), int(yVal + 2), loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].smoothness);
-			}
-
-			gui.activeUI[int(xVal - 1)][int(yVal + 3)].sprite = { 5, 26 };
-			gui.activeUI[int(xVal + 9)][int(yVal + 3)].sprite = { 6, 26 };
-		}
-		if (type == 4) // Noise seed
-		{
-			DrawGUIText("Seed:" + std::to_string(int(loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].noiseSeed)), xVal - 2, xVal + 8, yVal + 3, 3, 0);
-			DrawHorizontalSlider(int(xVal + 6), int(xVal + 14), int(yVal + 3), float(loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].noiseSeed) / 16.0f);
-		}
-	}
 
 
 	return;
