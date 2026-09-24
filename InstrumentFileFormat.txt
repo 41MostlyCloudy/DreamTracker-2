@@ -9,8 +9,6 @@ INSTRUMENT FILE FORMAT
 
 (1 byte) Volume
 
-(1 byte) UNUSED
-
 (1 byte) Arppeggio speed/length
 
 For all 8 arp values:
@@ -18,9 +16,13 @@ For all 8 arp values:
 	| (1 byte) Arp value
 	|
 
-(1 byte) Modulation type/scale
-
 (1 byte) Envelope scale
+
+
+For all 32 pitch envelope points:
+	|
+	| (1 byte) Envelope
+	|
 
 For all 2 waves:
 	|
@@ -28,9 +30,13 @@ For all 2 waves:
 	|
 	| (1 byte) Wave type
 	|
-	| (1 byte) Offset + Octave
+	| (1 byte) Octave
 	|
 	| (1 byte) Release
+	|
+	| (1 byte) LFO Depth
+	|
+	| (1 byte) LFO Speed
 	|
 	| (1 byte) Boolean flags
 	|

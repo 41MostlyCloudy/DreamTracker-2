@@ -76,8 +76,6 @@ void readModulator(float* pOutputF32, ma_uint64 frameCount, int channel, int op,
     // For a mapped wave, all instrument properties are used.
     // The channel waveform state uses the direct operator waveform.
 
-    
-
 
     float notePitch = channels[channel].pitch * channels[channel].arpPitch;
 
@@ -107,24 +105,24 @@ void readModulator(float* pOutputF32, ma_uint64 frameCount, int channel, int op,
 
         //////////////////////////////////////////////////////////////////////////////////////////////////////// Envelope
 
-        channels[channel].waveforms[op].envelopePos += 0.001f * loadedInstruments[channels[channel].instrument].envelopeScale;
+        channels[channel].waveforms[op].ampEnvelope.envelopePos += 0.001f * loadedInstruments[channels[channel].instrument].envelopeScale;
 
-        while (channels[channel].waveforms[op].envelopePos >= 1.0f)
+        while (channels[channel].waveforms[op].ampEnvelope.envelopePos >= 1.0f)
         {
-            channels[channel].waveforms[op].currentEnvelopeAmp = channels[channel].waveforms[op].nextEnvelopeAmp;
-            channels[channel].waveforms[op].currentEnvelopeIndex++;
+            channels[channel].waveforms[op].ampEnvelope.currentEnvelopeAmp = channels[channel].waveforms[op].ampEnvelope.nextEnvelopeAmp;
+            channels[channel].waveforms[op].ampEnvelope.currentEnvelopeIndex++;
 
-            if (channels[channel].waveforms[op].currentEnvelopeIndex < 32)
+            if (channels[channel].waveforms[op].ampEnvelope.currentEnvelopeIndex < 32)
             {
-                channels[channel].waveforms[op].nextEnvelopeAmp = float(loadedInstruments[channels[channel].instrument].waveforms[op].envelope[channels[channel].waveforms[op].currentEnvelopeIndex]) / 255.0f;
+                channels[channel].waveforms[op].ampEnvelope.nextEnvelopeAmp = float(loadedInstruments[channels[channel].instrument].waveforms[op].envelope[channels[channel].waveforms[op].ampEnvelope.currentEnvelopeIndex]) / 255.0f;
             }
 
-            channels[channel].waveforms[op].envelopePos -= 1.0f;
+            channels[channel].waveforms[op].ampEnvelope.envelopePos -= 1.0f;
         }
 
 
-        float envInterp = channels[channel].waveforms[op].envelopePos;
-        float envAmp = channels[channel].waveforms[op].currentEnvelopeAmp * (1.0f - envInterp) + channels[channel].waveforms[op].nextEnvelopeAmp * envInterp;
+        float envInterp = channels[channel].waveforms[op].ampEnvelope.envelopePos;
+        float envAmp = channels[channel].waveforms[op].ampEnvelope.currentEnvelopeAmp * (1.0f - envInterp) + channels[channel].waveforms[op].ampEnvelope.nextEnvelopeAmp * envInterp;
 
 
         // Apply release
@@ -144,11 +142,32 @@ void readModulator(float* pOutputF32, ma_uint64 frameCount, int channel, int op,
         }
         
 
+        //////////////////////////////////////////////////////////////////////////////////////////////////////// Pitch envelope
+
+        channels[channel].pitchEnvelope.envelopePos += 0.001f * loadedInstruments[channels[channel].instrument].envelopeScale;
+
+        while (channels[channel].pitchEnvelope.envelopePos >= 1.0f)
+        {
+            channels[channel].pitchEnvelope.currentEnvelopeAmp = channels[channel].pitchEnvelope.nextEnvelopeAmp;
+            channels[channel].pitchEnvelope.currentEnvelopeIndex++;
+
+            if (channels[channel].pitchEnvelope.currentEnvelopeIndex < 32)
+            {
+                channels[channel].pitchEnvelope.nextEnvelopeAmp = float(loadedInstruments[channels[channel].instrument].pitchEnvelope[channels[channel].pitchEnvelope.currentEnvelopeIndex]) / 127.0f;
+            }
+
+            channels[channel].pitchEnvelope.envelopePos -= 1.0f;
+        }
+
+
+        float pitchEnvInterp = channels[channel].pitchEnvelope.envelopePos;
+        float pitchEnvAmp = channels[channel].pitchEnvelope.currentEnvelopeAmp * (1.0f - pitchEnvInterp) + channels[channel].pitchEnvelope.nextEnvelopeAmp * pitchEnvInterp;
+
+
         ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-
-        notePitch = channels[channel].pitch;
+        notePitch = channels[channel].pitch * pitchEnvAmp;
 
 
         
@@ -188,33 +207,15 @@ void readModulator(float* pOutputF32, ma_uint64 frameCount, int channel, int op,
 
         if (mod != nullptr)
         {
-            float modStrength = loadedInstruments[channels[channel].instrument].modScale * channels[channel].modMultiply;
-
-            if (loadedInstruments[channels[channel].instrument].modulationType == 1) // FM
-            {
-                notePitch += mod[i] * modStrength * 8.0f;
-            }
-            else if (loadedInstruments[channels[channel].instrument].modulationType == 2) // AM
-            {
-                envAmp *= mod[i] * modStrength * 8.0f;
-            }
-            else if (loadedInstruments[channels[channel].instrument].modulationType == 3) // Apply PM.
-            {
-                float mapPos = ((mod[i] * mod[i] * mod[i] * modStrength) + 0.5f) * 4.0f;
-                while (mapPos > 1.0f) mapPos--;
-                while (mapPos < 0.0f) mapPos++;
-                mapPos *= 182;
-                channels[channel].waveforms[op].sampleReadPos = mapPos;
-                notePitch = 0.0f;
-            }
+            notePitch += mod[i] * 4.0f;
         }
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////// Read frame data.
         // Make sure that the frame reading position is inside the sample.
-        while (channels[channel].waveforms[op].sampleReadPos >= 183)
-            channels[channel].waveforms[op].sampleReadPos -= 183;
+        while (channels[channel].waveforms[op].sampleReadPos >= waveformLength)
+            channels[channel].waveforms[op].sampleReadPos -= waveformLength;
         while (channels[channel].waveforms[op].sampleReadPos < 0)
-            channels[channel].waveforms[op].sampleReadPos += 183;
+            channels[channel].waveforms[op].sampleReadPos += waveformLength;
 
 
         
@@ -222,16 +223,17 @@ void readModulator(float* pOutputF32, ma_uint64 frameCount, int channel, int op,
 
         for (int freq = 0; freq < 8; freq++)
         {
-            float readIndex = channels[channel].waveforms[op].sampleReadPos * float(freq + 1);
+            float readIndex = channels[channel].waveforms[op].sampleReadPos * waveformSpeed * float(freq + 1);
             int index1 = int(readIndex);
             int index2 = int(readIndex) + 1;
 
             float t = readIndex - index1;  // Fractional part
 
-            while (index1 >= 183)
-                index1 -= 183;
-            while (index2 >= 183)
-                index2 -= 183;
+
+            while (index1 >= waveformLength)
+                index1 -= waveformLength;
+            while (index2 >= waveformLength)
+                index2 -= waveformLength;
 
 
             float freqVol = waveForms[loadedInstruments[channels[channel].instrument].waveforms[op].waveType].pcmFrames[index1] * (1.0f - t)
@@ -242,33 +244,62 @@ void readModulator(float* pOutputF32, ma_uint64 frameCount, int channel, int op,
             frameVol += freqVol;
         }
 
-
-        frameVol += (loadedInstruments[channels[channel].instrument].waveforms[op].offset * 2.0f) - 1.0f;
-
         
 
         channels[channel].waveforms[op].sampleReadPos += notePitch;
 
-        // Add noise.
-        if (notePitch > 0.01f)
-            channels[channel].waveforms[op].noiseReadPos += notePitch * 0.5f;
-        else
-            channels[channel].waveforms[op].noiseReadPos += 0.01f;
-
-        while (channels[channel].waveforms[op].noiseReadPos >= 1.0f)
+        // Add noise to carrier.
+        if (mod != nullptr)
         {
-            channels[channel].waveforms[op].noiseReadPos--;
 
-            channels[channel].waveforms[op].noiseVal = channels[channel].waveforms[op].nextNoiseVal;
-            channels[channel].waveforms[op].nextNoiseVal = float((rand() % 256) - 127) / 128.0f;
+            if (notePitch > 0.01f)
+                channels[channel].waveforms[op].noiseReadPos += notePitch * 0.5f;
+            else
+                channels[channel].waveforms[op].noiseReadPos += 0.01f;
+
+            while (channels[channel].waveforms[op].noiseReadPos >= 1.0f)
+            {
+                channels[channel].waveforms[op].noiseReadPos--;
+
+                channels[channel].waveforms[op].noiseVal = channels[channel].waveforms[op].nextNoiseVal;
+                channels[channel].waveforms[op].nextNoiseVal = float((rand() % 256) - 127) / 128.0f;
+            }
+
+            float noiseT = channels[channel].waveforms[op].noiseReadPos;
+            float noiseAmp = channels[channel].waveforms[op].noiseVal * (1.0f - noiseT) + channels[channel].waveforms[op].nextNoiseVal * noiseT;
+
+            frameVol += loadedInstruments[channels[channel].instrument].waveforms[op].noiseVolume * noiseAmp;
         }
 
-        float noiseT = channels[channel].waveforms[op].noiseReadPos;
-        float noiseAmp = channels[channel].waveforms[op].noiseVal * (1.0f - noiseT) + channels[channel].waveforms[op].nextNoiseVal * noiseT;
 
-        frameVol += loadedInstruments[channels[channel].instrument].waveforms[op].noiseVolume * noiseAmp;
+        // Add the LFO.
+        // Make sure that the frame reading position is inside the sample.
+        while (channels[channel].waveforms[op].lfoReadPos >= waveformLength)
+            channels[channel].waveforms[op].lfoReadPos -= waveformLength;
+        while (channels[channel].waveforms[op].lfoReadPos < 0)
+            channels[channel].waveforms[op].lfoReadPos += waveformLength;
 
 
+        float lfoReadIndex = channels[channel].waveforms[op].lfoReadPos * waveformSpeed;
+        int lfoIndex1 = int(lfoReadIndex);
+        int lfoIndex2 = int(lfoReadIndex) + 1;
+
+        float lfoT = lfoReadIndex - lfoIndex1;  // Fractional part
+
+
+        while (lfoIndex1 >= waveformLength)
+            lfoIndex1 -= waveformLength;
+        while (lfoIndex2 >= waveformLength)
+            lfoIndex2 -= waveformLength;
+
+
+        float lfoVol = ((waveForms[0].pcmFrames[lfoIndex1] * (1.0f - lfoT) + waveForms[0].pcmFrames[lfoIndex2] * lfoT) + 1.0f) * 0.5f;
+
+        float lfoDepth = loadedInstruments[channels[channel].instrument].waveforms[op].lfoDepth;
+
+        frameVol *= (1.0f - (lfoDepth * 0.5f)) + (lfoVol * lfoDepth);
+
+        channels[channel].waveforms[op].lfoReadPos += 0.05f * loadedInstruments[channels[channel].instrument].waveforms[op].lfoSpeed;
 
 
         //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -276,12 +307,6 @@ void readModulator(float* pOutputF32, ma_uint64 frameCount, int channel, int op,
         
         
 
-        
-        
-
-
-
-        
 
 
         // Glide to volume.
@@ -311,16 +336,6 @@ void readModulator(float* pOutputF32, ma_uint64 frameCount, int channel, int op,
         }
 
         
-        // Modulator Slide
-        if (channels[channel].modSlide != 0.0f)
-        {
-            channels[channel].modMultiply += channels[channel].modSlide * 0.00001f * 120.0f;
-
-            if (channels[channel].modMultiply > 1.0f)
-                channels[channel].modMultiply = 1.0f;
-            else if (channels[channel].modMultiply < 0.0f)
-                channels[channel].modMultiply = 0.0f;
-        }
     }
 
 
@@ -376,9 +391,7 @@ void applySubtractiveFilters(float* pOutputF32, ma_uint64 frameCount, int channe
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         float frameL = input[i];
-        
 
-        
 
         frameL *= 0.5f;
 
@@ -405,8 +418,8 @@ void applySubtractiveFilters(float* pOutputF32, ma_uint64 frameCount, int channe
 
 
 
-        if (channels[channel].oscilloscope.readPos >= 183.0f)
-            channels[channel].oscilloscope.readPos -= 183.0f;
+        while (channels[channel].oscilloscope.readPos >= waveformLength)
+            channels[channel].oscilloscope.readPos -= waveformLength;
 
 
         /////////////////////////////////////////////// Update note parameters.
@@ -423,20 +436,28 @@ void readWithFMAlgorithm(float* pOutputF32, ma_uint64 frameCount, int channel, m
     if (!channels[channel].playing)
         return;
 
-
+    
 
     float frames[480] = { 0 };
     float mod2[480] = { 0 };
 
     float oldPitch = channels[channel].pitch;
-    float oldMod = channels[channel].modMultiply;
     float oldArp = channels[channel].arpTimer;
+
+    float oldPitchEnvAmp = channels[channel].pitchEnvelope.currentEnvelopeAmp;
+    float oldPitchEnvInd = channels[channel].pitchEnvelope.currentEnvelopeIndex;
+    float oldPitchEnvPos = channels[channel].pitchEnvelope.envelopePos;
+    float oldPitchEnvAmp2 = channels[channel].pitchEnvelope.nextEnvelopeAmp;
 
     readModulator(mod2, frameCount, channel, 1, NULL); // Read the modulator
 
     channels[channel].pitch = oldPitch;
-    channels[channel].modMultiply = oldMod;
     channels[channel].arpTimer = oldArp;
+
+    channels[channel].pitchEnvelope.currentEnvelopeAmp = oldPitchEnvAmp;
+    channels[channel].pitchEnvelope.currentEnvelopeIndex = oldPitchEnvInd;
+    channels[channel].pitchEnvelope.envelopePos = oldPitchEnvPos;
+    channels[channel].pitchEnvelope.nextEnvelopeAmp = oldPitchEnvAmp2;
 
     // Set the pitch of the arp if the note has changed.
     float arpNote = float(loadedInstruments[channels[channel].instrument].arpPitches[int(oldArp)]);
@@ -447,6 +468,7 @@ void readWithFMAlgorithm(float* pOutputF32, ma_uint64 frameCount, int channel, m
     
 
     readModulator(frames, frameCount, channel, 0, mod2); // Read the carrier
+
 
     
 
@@ -525,25 +547,6 @@ void PlayChannels(float* pOutputF32, ma_uint32 frameCount, ma_uint32 frameOffset
     {
         if (!(channels[channel].muted || (editor.playSolo && !channels[channel].solo)))
         {
-            /*
-            if (loadedInstruments[channels[channel].instrument].arpLength >= 0) // Arpeggiate note.
-            {
-                channels[channel].arpTimer += frameCount;
-
-                float arpAmount = 48000.0f * (120.0f / loadedSong.bpm) * ((loadedInstruments[channels[channel].instrument].arpSpeed + 0.0625f)) / 8.0f;
-
-
-                if (channels[channel].arpTimer > arpAmount)
-                {
-                    channels[channel].arpTimer += arpAmount;
-                    //channels[channel].arpIndex++;
-                    if (channels[channel].arpTimer > loadedInstruments[channels[channel].instrument].arpLength)
-                        channels[channel].arpTimer = 0.0f;
-                    //if (channels[channel].arpIndex > loadedInstruments[channels[channel].instrument].arpLength)
-                    //    channels[channel].arpIndex = -1;
-                }
-            }*/
-
 
             if (channels[channel].patternOffset > 0) // Start offset note.
             {
@@ -624,7 +627,6 @@ void SetUpAudioEngine()
 
 void StartNote(int channel, int sampleNumber, float pitch)
 {
-
     channels[channel].offsetNote = pitch;
 
 
@@ -647,7 +649,7 @@ void StartNote(int channel, int sampleNumber, float pitch)
 
 
 
-    // If changing instruments, reset frame reading to make sure that phase is consistant.
+    // If changing instruments, reset frame reading to make sure that phase is consistent.
     if (sampleNumber != channels[channel].instrument)
     {
         for (int wave = 0; wave < 2; wave++)
@@ -675,12 +677,11 @@ void StartNote(int channel, int sampleNumber, float pitch)
     for (int wave = 0; wave < 2; wave++)
     {
         // Set envelope position.
-        channels[channel].waveforms[wave].currentEnvelopeIndex = 0;
-        channels[channel].waveforms[wave].envelopePos = 0.0f;
-
+        channels[channel].waveforms[wave].ampEnvelope.currentEnvelopeIndex = 0;
+        channels[channel].waveforms[wave].ampEnvelope.envelopePos = 0.0f;
         
-        channels[channel].waveforms[wave].currentEnvelopeAmp = float(loadedInstruments[sampleNumber].waveforms[wave].envelope[0]) / 255.0f;
-        channels[channel].waveforms[wave].nextEnvelopeAmp = float(loadedInstruments[sampleNumber].waveforms[wave].envelope[0]) / 255.0f;
+        channels[channel].waveforms[wave].ampEnvelope.currentEnvelopeAmp = float(loadedInstruments[sampleNumber].waveforms[wave].envelope[0]) / 255.0f;
+        channels[channel].waveforms[wave].ampEnvelope.nextEnvelopeAmp = float(loadedInstruments[sampleNumber].waveforms[wave].envelope[0]) / 255.0f;
 
         
 
@@ -688,8 +689,16 @@ void StartNote(int channel, int sampleNumber, float pitch)
         channels[channel].waveforms[wave].releaseTimer = 0.0f;
     }
 
-    
-    
+
+    // Reset pitch envelope.
+    channels[channel].pitchEnvelope.currentEnvelopeIndex = 0;
+    channels[channel].pitchEnvelope.envelopePos = 0.0f;
+
+    channels[channel].pitchEnvelope.currentEnvelopeAmp = float(loadedInstruments[sampleNumber].pitchEnvelope[0]) / 127.0f;
+    channels[channel].pitchEnvelope.nextEnvelopeAmp = float(loadedInstruments[sampleNumber].pitchEnvelope[0]) / 127.0f;
+
+
+
 
     channels[channel].noteStopped = false;
 
@@ -887,10 +896,6 @@ void updateChannelOnBeat(int ch)
                 channels[ch].volumeSlide = float(effectVal) / 2000.0f;
             else if (effectType == 4) // Decrease volume.
                 channels[ch].volumeSlide = float(effectVal) / -2000.0f;
-            else if (effectType == 5) // Increase modulator.
-                channels[ch].modSlide = float(effectVal) / 1000.0f;
-            else if (effectType == 6) // Decrease modulator.
-                channels[ch].modSlide = float(effectVal) / -1000.0f;
             else if (effectType == 13) // Delay note.
             {
                 float fInBeat = (60000.0f / (loadedSong.bpm * 4.0f)) * 48.0f;
@@ -1076,7 +1081,7 @@ void StartOrStopSong()
         {
             for (int ch = 0; ch < 8; ch++)
             {
-                for (int fr = 0; fr < 183; fr++)
+                for (int fr = 0; fr < waveformLength; fr++)
                     channels[ch].oscilloscope.pcmFrames[fr] = 0.0f;
                 DrawOscilloscope(ch);
             }
@@ -1164,9 +1169,6 @@ void DrawSampleDisplay()
         return;
 
 
-    DrawEnvelopeDisplay();
-
-    
 
 
     for (int x = 0; x < 264; x++)
@@ -1174,10 +1176,10 @@ void DrawSampleDisplay()
         float brightness = 1.0f;
 
 
-        int subdivision = int((float(x) / 264.0f) * 16.0f);
+        int subdivision = int((float(x) / 264.0f) * 32.0f);
         bool lighten = subdivision % 2 == 0;
 
-        for (int y = 40; y < 80; y++)
+        for (int y = 0; y < 80; y++)
         {
             if (lighten)
             {
@@ -1195,116 +1197,7 @@ void DrawSampleDisplay()
     }
 
 
-
-
-    int otherOp = 0;
-    if (sampleDisplay.selectedOperator == 0)
-        otherOp = 1;
-    
-    // Draw the unselected operator.
-    float lastFrameVal = int(waveForms[loadedInstruments[editor.selectedInstrument].waveforms[otherOp].waveType].pcmFrames[0] * 20.0f) + 60.0f;
-
-
-    for (int x = 0; x < 264; x++)
-    {
-        int frameIndex = (float(x) / 264.0f) * (183.0f);
-
-
-        if (frameIndex >= 183)
-            break;
-
-        int frameVal = int(waveForms[loadedInstruments[editor.selectedInstrument].waveforms[otherOp].waveType].pcmFrames[frameIndex] * 20.0f) + 60.0f;
-
-
-
-        if (frameVal > 79)
-            frameVal = 79;
-        else if (frameVal < 40)
-            frameVal = 40;
-
-
-
-        float brightness = 127.0f;
-
-
-
-        if (lastFrameVal < frameVal)
-        {
-            for (int y = lastFrameVal; y <= frameVal; y++)
-            {
-                sampleDisplay.pixelData[x + 264 * y].r = gui.uiColors[6] * 255.0f;
-                sampleDisplay.pixelData[x + 264 * y].g = gui.uiColors[7] * 255.0f;
-                sampleDisplay.pixelData[x + 264 * y].b = gui.uiColors[8] * 255.0f;
-            }
-        }
-        else
-        {
-            for (int y = frameVal; y <= lastFrameVal; y++)
-            {
-                sampleDisplay.pixelData[x + 264 * y].r = gui.uiColors[6] * 255.0f;
-                sampleDisplay.pixelData[x + 264 * y].g = gui.uiColors[7] * 255.0f;
-                sampleDisplay.pixelData[x + 264 * y].b = gui.uiColors[8] * 255.0f;
-            }
-        }
-
-
-
-        lastFrameVal = frameVal;
-    }
-
-
-    
-
-    // Draw the selected operator.
-
-    lastFrameVal = int(waveForms[loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].waveType].pcmFrames[0] * 20.0f) + 60.0f;
-
-    for (int x = 0; x < 528; x++)
-    {
-        int frameIndex = (float(x) / 264.0f) * (183.0f);
-
-
-        if (frameIndex >= 183)
-            break;
-
-        int frameVal = int(waveForms[loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].waveType].pcmFrames[frameIndex] * 20.0f) + 60.0f;
-
-        if (frameVal > 79)
-            frameVal = 79;
-        else if (frameVal < 40)
-            frameVal = 40;
-
-
-
-        float brightness = 127.0f;
-
-
-        if (lastFrameVal < frameVal)
-        {
-            for (int y = lastFrameVal; y <= frameVal; y++)
-            {
-                sampleDisplay.pixelData[x + 264 * y].r = gui.uiColors[48] * 255.0f;
-                sampleDisplay.pixelData[x + 264 * y].g = gui.uiColors[49] * 255.0f;
-                sampleDisplay.pixelData[x + 264 * y].b = gui.uiColors[50] * 255.0f;
-            }
-        }
-        else
-        {
-            for (int y = frameVal; y <= lastFrameVal; y++)
-            {
-                sampleDisplay.pixelData[x + 264 * y].r = gui.uiColors[48] * 255.0f;
-                sampleDisplay.pixelData[x + 264 * y].g = gui.uiColors[49] * 255.0f;
-                sampleDisplay.pixelData[x + 264 * y].b = gui.uiColors[50] * 255.0f;
-            }
-        }
-
-
-
-
-        lastFrameVal = frameVal;
-
-
-    }
+    DrawEnvelopeDisplay();
 
     
 
@@ -1313,16 +1206,19 @@ void DrawSampleDisplay()
 
 
 
+
 void DrawEnvelopeDisplay()
 {
 
-    int otherOp = 0;
-    if (sampleDisplay.selectedOperator == 0)
-        otherOp = 1;
+    int envNumber = sampleDisplay.selectedEnvelope;
 
-    
-    int lastEnvAmp1 = int((float(loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelope[0]) / 255.0) * 40.0);
-    int lastEnvAmp2 = int((float(loadedInstruments[editor.selectedInstrument].waveforms[otherOp].envelope[0]) / 255.0) * 40.0);
+
+    int lastEnvAmp = 0.0;
+
+    if (envNumber < 2)
+        lastEnvAmp = int((float(loadedInstruments[editor.selectedInstrument].waveforms[envNumber].envelope[0]) / 255.0) * 80.0);
+    else
+        lastEnvAmp = int((float(loadedInstruments[editor.selectedInstrument].pitchEnvelope[0]) / 255.0) * 80.0);
 
     for (int x = 0; x < 264; x++)
     {
@@ -1337,50 +1233,29 @@ void DrawEnvelopeDisplay()
 
         float interp = ((float(x) / 264.0) * 32.0) - index;
 
-        /////////////////////////////////////////////////////////////
 
-        int envVal = int((float(loadedInstruments[editor.selectedInstrument].waveforms[otherOp].envelope[index]) / 255.0) * 40.0);
-        int envValNext = int((float(loadedInstruments[editor.selectedInstrument].waveforms[otherOp].envelope[nextIndex]) / 255.0) * 40.0);
+        int envVal = 0.0f;
+        int envValNext = 0.0f;
 
-        int envAmp = envVal * (1.0f - interp) + envValNext * interp;
-
-
-        for (int y = 0; y < 40; y++)
+        if (envNumber < 2)
         {
-            if ((y >= envAmp - 1 && y <= lastEnvAmp2) || (y <= envAmp && y >= lastEnvAmp2 - 1))
-            {
-                sampleDisplay.pixelData[x + 264 * y].r = gui.uiColors[6] * 255.0f;
-                sampleDisplay.pixelData[x + 264 * y].g = gui.uiColors[7] * 255.0f;
-                sampleDisplay.pixelData[x + 264 * y].b = gui.uiColors[8] * 255.0f;
-            }
-            else if (lighten)
-            {
-                sampleDisplay.pixelData[x + 264 * y].r = gui.uiColors[3] * 255.0f;
-                sampleDisplay.pixelData[x + 264 * y].g = gui.uiColors[4] * 255.0f;
-                sampleDisplay.pixelData[x + 264 * y].b = gui.uiColors[5] * 255.0f;
-            }
-            else
-            {
-                sampleDisplay.pixelData[x + 264 * y].r = gui.uiColors[0] * 255.0f;
-                sampleDisplay.pixelData[x + 264 * y].g = gui.uiColors[1] * 255.0f;
-                sampleDisplay.pixelData[x + 264 * y].b = gui.uiColors[2] * 255.0f;
-            }
+            envVal = int((float(loadedInstruments[editor.selectedInstrument].waveforms[envNumber].envelope[index]) / 255.0) * 80.0);
+            envValNext = int((float(loadedInstruments[editor.selectedInstrument].waveforms[envNumber].envelope[nextIndex]) / 255.0) * 80.0);
+        }
+        else
+        {
+            envVal = int((float(loadedInstruments[editor.selectedInstrument].pitchEnvelope[index]) / 255.0) * 80.0);
+            envValNext = int((float(loadedInstruments[editor.selectedInstrument].pitchEnvelope[nextIndex]) / 255.0) * 80.0);
         }
 
-        lastEnvAmp2 = envAmp;
 
 
-        ///////////////////////////////////////////////
-
-        envVal = int((float(loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelope[index]) / 255.0) * 40.0);
-        envValNext = int((float(loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelope[nextIndex]) / 255.0) * 40.0);
-
-        envAmp = envVal * (1.0f - interp) + envValNext * interp;
+        float envAmp = envVal * (1.0f - interp) + envValNext * interp;
 
 
-        for (int y = 0; y < 40; y++)
+        for (int y = 0; y < 80; y++)
         {
-            if ((y >= envAmp - 1 && y <= lastEnvAmp1) || (y <= envAmp && y >= lastEnvAmp1 - 1))
+            if ((y >= envAmp - 1 && y <= lastEnvAmp) || (y <= envAmp && y >= lastEnvAmp - 1))
             {
                 sampleDisplay.pixelData[x + 264 * y].r = gui.uiColors[48] * 255.0f;
                 sampleDisplay.pixelData[x + 264 * y].g = gui.uiColors[49] * 255.0f;
@@ -1388,7 +1263,18 @@ void DrawEnvelopeDisplay()
             }
         }
 
-        lastEnvAmp1 = envAmp;
+        if (envNumber == 2)
+        {
+            sampleDisplay.pixelData[x + 264 * 37].r = gui.uiColors[9] * 255.0f;
+            sampleDisplay.pixelData[x + 264 * 37].g = gui.uiColors[10] * 255.0f;
+            sampleDisplay.pixelData[x + 264 * 37].b = gui.uiColors[11] * 255.0f;
+
+            sampleDisplay.pixelData[x + 264 * 40].r = gui.uiColors[9] * 255.0f;
+            sampleDisplay.pixelData[x + 264 * 40].g = gui.uiColors[10] * 255.0f;
+            sampleDisplay.pixelData[x + 264 * 40].b = gui.uiColors[11] * 255.0f;
+        }
+
+        lastEnvAmp = envAmp;
     }
 
     return;
@@ -1401,7 +1287,7 @@ void DrawOscilloscope(int channel)
 {
     float pos = 0.0f;
 
-    float step = 183.0f / 48.0f;
+    float step = (float(waveformLength) / waveformSpeed) / 48.0f;
 
 
     
@@ -1426,8 +1312,8 @@ void DrawOscilloscope(int channel)
 
         pos += step;
 
-        if (pos >= 183.0f)
-            pos -= 183.0f;
+        if (pos >= waveformLength)
+            pos -= waveformLength;
 
         float vol = channels[channel].oscilloscope.pcmFrames[int(pos)] * 2.0f;
 

@@ -672,12 +672,6 @@ void WriteInstrument(std::ofstream* instrumentFile, Instrument* instrument)
     uint8_t volume = instrument->volume * 16.0f;
     instrumentFile->write((char*)&volume, 1);
 
-    uint8_t fuzzByte = 0;
-    //int fuzz = int(instrument->fuzz * 16.0f);
-    int fuzz = 0.0;
-    if (fuzz > 15) fuzz = 15; else if (fuzz < 0) fuzz = 0; // Clamp
-    fuzzByte = fuzz;
-    instrumentFile->write((char*)&fuzzByte, 1);
 
     // Arp
     uint8_t arpVar = int((instrument->arpSpeed - 1) * 16.0f) + instrument->arpLength;
@@ -690,14 +684,19 @@ void WriteInstrument(std::ofstream* instrumentFile, Instrument* instrument)
     }
 
 
-    // Modulation
-    if (instrument->modScale > 0.9375f) instrument->modScale = 0.9375f;
-    uint8_t modPath = int((instrument->modulationType) * 16.0f) + int(instrument->modScale * 16.0f);
-    instrumentFile->write((char*)&modPath, 1);
+    
 
 
     uint8_t envScale = int(instrument->envelopeScale * 8.0f);
     instrumentFile->write((char*)&envScale, 1);
+
+
+
+    for (int p = 0; p < 32; p++)
+    {
+        uint8_t envVar = instrument->pitchEnvelope[p];
+        instrumentFile->write((char*)&envVar, 1);
+    }
 
 
     // For each used sample.
@@ -714,12 +713,19 @@ void WriteInstrument(std::ofstream* instrumentFile, Instrument* instrument)
         instrumentFile->write((char*)&waveVar, 1);
 
 
-        if (instrument->waveforms[j].offset > 0.9375f) instrument->waveforms[j].offset = 0.9375f;
-        waveVar = int((instrument->waveforms[j].offset * 16.0f) * 16.0f) + int(instrument->waveforms[j].octave);
+        waveVar = int(instrument->waveforms[j].octave);
         instrumentFile->write((char*)&waveVar, 1);
 
 
         waveVar = int(instrument->waveforms[j].release * 16.0f);
+        instrumentFile->write((char*)&waveVar, 1);
+
+
+        waveVar = int(instrument->waveforms[j].lfoDepth * 16.0f);
+        instrumentFile->write((char*)&waveVar, 1);
+
+
+        waveVar = int(instrument->waveforms[j].lfoSpeed * 16.0f);
         instrumentFile->write((char*)&waveVar, 1);
 
 
@@ -767,10 +773,6 @@ Instrument ReadInstrument(std::ifstream* instrumentFile)
     instrumentFile->read((char*)&volume, 1);
     newInstrument.volume = float(volume) / 16.0f;
 
-    uint8_t clip;
-    instrumentFile->read((char*)&clip, 1);
-    //newInstrument.fuzz = float(clip) / 16.0f;
-
 
     uint8_t readVar = 0;
     float var1 = 0.0f;
@@ -796,16 +798,19 @@ Instrument ReadInstrument(std::ifstream* instrumentFile)
     }
 
 
-    // Modulation
-    instrumentFile->read((char*)&readVar, 1);
-    var1 = int(readVar / 16.0f);
-    var2 = readVar - var1 * 16.0f;
-    newInstrument.modulationType = var1;
-    newInstrument.modScale = var2 / 16.0f;
 
 
     instrumentFile->read((char*)&readVar, 1);
     newInstrument.envelopeScale = float(int(readVar)) * 0.125f;
+
+
+
+    for (int p = 0; p < 32; p++)
+    {
+        uint8_t envVar = 0;
+        instrumentFile->read((char*)&envVar, 1);
+        newInstrument.pitchEnvelope[p] = envVar;
+    }
 
 
     // For each used wave.
@@ -823,14 +828,19 @@ Instrument ReadInstrument(std::ifstream* instrumentFile)
 
 
         instrumentFile->read((char*)&readVar, 1);
-        var1 = int(readVar / 16.0f);
-        var2 = readVar - var1 * 16.0f;
-        newInstrument.waveforms[j].offset = float(var1) / 16.0f;
-        newInstrument.waveforms[j].octave = var2;
+        newInstrument.waveforms[j].octave = readVar;
 
 
         instrumentFile->read((char*)&readVar, 1);
         newInstrument.waveforms[j].release = float(readVar) / 16.0f;
+
+
+        instrumentFile->read((char*)&readVar, 1);
+        newInstrument.waveforms[j].lfoDepth = float(readVar) / 16.0f;
+
+
+        instrumentFile->read((char*)&readVar, 1);
+        newInstrument.waveforms[j].lfoSpeed = float(readVar) / 16.0f;
 
 
         // Boolean flags
@@ -879,11 +889,7 @@ Instrument ReadInstrument(std::ifstream* instrumentFile)
             newInstrument.waveforms[j].envelope[p] = envelopeVar;
         }
 
-        
 
-
-        
-        
     }
 
 
@@ -999,6 +1005,11 @@ void ClearSong()
                     loadedInstruments[i].waveforms[wave].envelope[env] = 255;
             }
 
+            for (int env = 0; env < 32; env++)
+            {
+                loadedInstruments[i].pitchEnvelope[env] = 127;
+            }
+
             loadedInstruments[i].enabled = false;
         }
     }
@@ -1021,34 +1032,103 @@ void ClearSong()
 
 void CreateWaveforms()
 {
-    int length = 183;
-
-    for (int x = 0; x < length; x++) // Sine
-        waveForms[0].pcmFrames[x] = sin((float(x) / float(length)) * 6.28312);
-
-
-    for (int x = 0; x < length; x++) // Square
+    // Resize the channel Oscilloscopes to match the waveform length.
+    for (int ch = 0; ch < 8; ch++)
     {
-        if (x < float(length) / 2.0f)
+        channels[ch].oscilloscope.pcmFrames.resize(waveformLength);
+    }
+
+
+    for (int wave = 0; wave < 4; wave++)
+        waveForms[wave].pcmFrames.resize(waveformLength);
+
+
+    for (int x = 0; x < waveformLength; x++) // Sine
+        waveForms[0].pcmFrames[x] = sin((float(x) / float(waveformLength)) * 6.28312);
+
+
+    /*
+    for (int x = 0; x < waveformLength; x++) // Square
+    {
+        if (x < float(waveformLength) / 2.0f)
             waveForms[1].pcmFrames[x] = 1.0f;
         else
             waveForms[1].pcmFrames[x] = -1.0f;
+    }*/
+    int waves = 16.0f;
+    for (int x = 0; x < waveformLength; x++) // Square
+    {
+        float vol = 0.0f;
+        bool addSign = true;
+        float periodPos = float(x) / float(waveformLength);
+
+        for (int w = 1; w < waves; w += 2)
+        {
+            vol += (sin(periodPos * float(w) * 6.283f) * 0.5f) / float(w);
+        }
+
+        waveForms[1].pcmFrames[x] = vol;
     }
 
 
-    for (int x = 0; x < length; x++) // Triangle
-    {
-        float halfLen = float(length) * 0.5f;
 
-        if (x < float(length) / 2.0f)
+
+    /*
+    for (int x = 0; x < waveformLength; x++) // Triangle
+    {
+        float halfLen = float(waveformLength) * 0.5f;
+
+        if (x < float(waveformLength) / 2.0f)
             waveForms[2].pcmFrames[x] = ((float(x) / halfLen) * 2.0f) - 1.0f;
         else
             waveForms[2].pcmFrames[x] = 1.0f - (((float(x) - halfLen) / halfLen) * 2.0f);
+    }*/
+
+
+    for (int x = 0; x < waveformLength; x++) // Triangle
+    {
+        float vol = 0.0f;
+        bool addSign = true;
+        float periodPos = float(x) / float(waveformLength);
+
+        for (int w = 1; w < waves / 2; w += 2)
+        {
+            float waveAmp = 1.0f / float(w * w);
+
+            if (addSign)
+                vol += (sin(periodPos * float(w) * 6.283f) * waveAmp * 0.8f);
+            else
+                vol -= (sin(periodPos * float(w) * 6.283f) * waveAmp * 0.8f);
+            addSign = !addSign;
+        }
+
+        waveForms[2].pcmFrames[x] = vol;
     }
 
 
-    for (int x = 0; x < length; x++) // Saw
-        waveForms[3].pcmFrames[x] = ((float(x) / length) * 2.0f) - 1.0f;
+    //for (int x = 0; x < waveformLength; x++) // Saw
+    //    waveForms[3].pcmFrames[x] = ((float(x) / waveformLength) * 2.0f) - 1.0f;
+
+    
+    for (int x = 0; x < waveformLength; x++) // Saw
+    {
+        float vol = 0.0f;
+        bool addSign = true;
+        float periodPos = float(x) / float(waveformLength);
+
+        for (int w = 1; w < waves; w++)
+        {
+            if (addSign)
+                vol += (sin(periodPos * float(w) * 6.283f) * 0.5f) / float(w);
+            else
+                vol -= (sin(periodPos * float(w) * 6.283f) * 0.5f) / float(w);
+            addSign = !addSign;
+        }
+
+        waveForms[3].pcmFrames[x] = vol;
+    }
+
+    
 
 
 

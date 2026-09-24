@@ -802,33 +802,35 @@ void processInput(GLFWwindow* window)
         }
 
 
-        if (screen.rightMouseDown)
-        {
-            for (int wind = 0; wind < windowController.windows.size(); wind++)
-            {
-                Vector2i posTL = windowController.windows[wind].position;
-                Vector2i posBR = posTL;
-                posBR.x += windowController.windows[wind].size.x + 1;
-                posBR.y += windowController.windows[wind].size.y;
-                if (gui.hoveredTile.y >= posTL.y && gui.hoveredTile.y < posBR.y)
-                {
-                    if (gui.hoveredTile.x >= posTL.x && gui.hoveredTile.x < posBR.x)
-                    {
-                        Vector2 windowPos = gui.hoveredTile;
-                        windowPos.x -= posTL.x;
-                        windowPos.y -= posTL.y;
-                        RightHoldFloatingWindow(&windowController.windows[wind], wind, windowPos, window);
-                        gui.clickingOnFloatingWind = true;
-                        return;
-                    }
-                }
-            }
-        }
+        
 
         if (gui.clickingOnFloatingWind)
             return;
     }
 
+
+    if (screen.rightMouseDown)
+    {
+        for (int wind = 0; wind < windowController.windows.size(); wind++)
+        {
+            Vector2i posTL = windowController.windows[wind].position;
+            Vector2i posBR = posTL;
+            posBR.x += windowController.windows[wind].size.x + 1;
+            posBR.y += windowController.windows[wind].size.y;
+            if (gui.hoveredTile.y >= posTL.y && gui.hoveredTile.y < posBR.y)
+            {
+                if (gui.hoveredTile.x >= posTL.x && gui.hoveredTile.x < posBR.x)
+                {
+                    Vector2 windowPos = gui.hoveredTile;
+                    windowPos.x -= posTL.x;
+                    windowPos.y -= posTL.y;
+                    RightHoldFloatingWindow(&windowController.windows[wind], wind, windowPos, window);
+                    gui.clickingOnFloatingWind = true;
+                    return;
+                }
+            }
+        }
+    }
 
 
 
@@ -1789,7 +1791,6 @@ void pressButton(GLFWwindow* window)
             windowController.InitializeWindow("Instrument Editor", { int(gui.hoveredTile.x), int(gui.hoveredTile.y) }, { 34, 40 });
 
             sampleDisplay.visible = true;
-            sampleDisplay.selectedOperator = 0; // Select the first sample operator.
 
             if (!loadedInstruments[editor.selectedInstrument].enabled) // Reset envelope.
             {
@@ -1797,6 +1798,11 @@ void pressButton(GLFWwindow* window)
                 {
                     for (int env = 0; env < 32; env++)
                         loadedInstruments[editor.selectedInstrument].waveforms[wave].envelope[env] = 255;
+                }
+
+                for (int env = 0; env < 32; env++)
+                {
+                    loadedInstruments[editor.selectedInstrument].pitchEnvelope[env] = 127;
                 }
             }
             loadedInstruments[editor.selectedInstrument].enabled = true;
@@ -1957,6 +1963,12 @@ void pressButton(GLFWwindow* window)
                             for (int env = 0; env < 32; env++)
                                 emptyinstrument.waveforms[wave].envelope[env] = 255;
                         }
+
+                        for (int env = 0; env < 32; env++)
+                        {
+                            emptyinstrument.pitchEnvelope[env] = 127;
+                        }
+
                         loadedInstruments[editor.selectedInstrument] = emptyinstrument;
                         loadedInstruments[editor.selectedInstrument].enabled = true;
                     }
@@ -1974,6 +1986,12 @@ void pressButton(GLFWwindow* window)
                             for (int env = 0; env < 32; env++)
                                 emptyinstrument.waveforms[wave].envelope[env] = 255;
                         }
+
+                        for (int env = 0; env < 32; env++)
+                        {
+                            emptyinstrument.pitchEnvelope[env] = 127;
+                        }
+
                         loadedInstruments[editor.selectedInstrument] = emptyinstrument;
                         loadedInstruments[editor.selectedInstrument].enabled = false;
                     }

@@ -70,7 +70,7 @@ struct EnvelopePoint
 
 struct Waveform
 {
-	float pcmFrames[183];
+	std::vector <float> pcmFrames;
 };
 
 
@@ -81,8 +81,6 @@ struct InstrumentWave
 	// Wave types: Sine, Square, Triangle, Saw
 	int waveType = 0;
 
-
-	float offset = 0.5f; // Offsets the wave volume from center = 0.5f.
 
 	float release = 0.0f;
 
@@ -101,6 +99,10 @@ struct InstrumentWave
 	int envelope[32] = { 0 };
 
 
+	float lfoDepth = 0.0f;
+	float lfoSpeed = 0.0f;
+
+
 };
 
 
@@ -115,9 +117,6 @@ struct Instrument
 	bool enabled = false;
 
 	InstrumentWave waveforms[2];
-	
-	int modulationType = 0;
-	float modScale = 0.9375;
 
 	int arpPitches[8] = { 0,0,0,0,0,0,0,0 }; // In semitones up from root note: (0 - 24)
 	int arpSpeed = 1; // Arpeggiation speed in subdivisions of a beat.
@@ -129,6 +128,8 @@ struct Instrument
 	// Envelope properties
 	float envelopeScale = 1.0f;
 
+
+	int pitchEnvelope[32] = { 0 };
 
 };
 
@@ -419,7 +420,19 @@ struct ChannelOscilloscope
 	Vector2i position;
 	RGBColor pixelData[1920]; // Screen data (48 x 40) pixels.
 
-	float pcmFrames[183];
+	std::vector <float> pcmFrames;
+};
+
+
+
+
+struct ChannelEnvelope
+{
+	float envelopePos = 0.0f;
+	int currentEnvelopeIndex = 0;
+
+	float currentEnvelopeAmp = 0.0f;
+	float nextEnvelopeAmp = 0.0f;
 };
 
 
@@ -429,15 +442,11 @@ struct ChannelWaveform
 {
 	float sampleReadPos = 0.0f;
 
+	float smoothVolume = 0.0f;
+
 
 	// Envelope
-	float envelopePos = 0.0f;
-	int currentEnvelopeIndex = 0;
-
-	float currentEnvelopeAmp = 0.0f;
-	float nextEnvelopeAmp = 0.0f;
-
-	float smoothVolume = 0.0f;
+	ChannelEnvelope ampEnvelope;
 
 
 	double releaseTimer = 0.0f; // Restarts when note is stopped. Interpolates to 1. Stepped according to release amount.
@@ -446,6 +455,9 @@ struct ChannelWaveform
 	float noiseVal = 0.0f;
 	float nextNoiseVal = 0.0f;
 	float noiseReadPos = 0.0f;
+
+
+	float lfoReadPos = 0.0f;
 
 };
 
@@ -481,9 +493,6 @@ struct Channel
 	float pitch = 0.0f;
 	float pitchSlide = 0.0f;
 
-	float modMultiply = 1.0f;
-	float modSlide = 0.0f;
-
 
 	float retrigger = 0.0f;
 	int retriggerTimer = 0;
@@ -498,7 +507,8 @@ struct Channel
 
 	int instrument = 0;
 
-	//int interpLastInstrument = 0;
+
+	ChannelEnvelope pitchEnvelope;
 
 	
 
@@ -519,11 +529,8 @@ struct Channel
 			volume = 1.0f;
 			pitchSlide = 0.0f;
 			volumeSlide = 0.0f;
-			modMultiply = 1.0f;
-
-			modSlide = 0.0f;
-			modMultiply = 1.0f;
 			retrigger = 0.0f;
+			
 		}
 
 
@@ -531,6 +538,8 @@ struct Channel
 
 		noteStopped = true;
 	}
+
+
 };
 
 
@@ -648,9 +657,7 @@ struct SampleDisplay
 	bool playingInstrument = false;
 
 
-	int selectedOperator = 0;
-
-
+	int selectedEnvelope = 0;
 
 };
 

@@ -390,38 +390,16 @@ void ClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clickPos
 			{
 				if (clickPos.x > 1 && clickPos.x < 10)
 				{
-					loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].waveType = (clickPos.x - 2) / 2;
+					loadedInstruments[editor.selectedInstrument].waveforms[0].waveType = (clickPos.x - 2) / 2;
 					DrawSampleDisplay();
 					loadedSong.unsavedChanges = true;
 					return;
 				}
 			}
 
-			// Change modulation type
-			if (clickPos.y == 21)
-			{
-				if (clickPos.x > 1 && clickPos.x < 10)
-				{
-					loadedInstruments[editor.selectedInstrument].modulationType = (clickPos.x - 2) / 2;
-					loadedSong.unsavedChanges = true;
-					return;
-				}
-			}
 			
 			// Synth UI.
-			if (clickPos.x > 1 && clickPos.x < 13)
-			{
-				if (clickPos.y == 2) // Toggle editing modulator/carrier.
-				{
-					if (sampleDisplay.selectedOperator == 0)
-						sampleDisplay.selectedOperator = 1;
-					else
-						sampleDisplay.selectedOperator = 0;
-					DrawSampleDisplay();
-					return;
-				}
-			}
-			else if (clickPos.x > 13 && clickPos.x < 23)
+			if (clickPos.x > 1 && clickPos.x < 11)
 			{
 				if (clickPos.y == 2) // Open preset menu.
 				{
@@ -430,28 +408,34 @@ void ClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clickPos
 					return;
 				}
 			}
-			else if (clickPos.x > 23 && clickPos.x < 30)
-			{
-				if (clickPos.y == 2) // Open replace with instrument menu.
-				{
-					windowController.InitializeWindow("Copy Instrument", { int(gui.hoveredTile.x), int(gui.hoveredTile.y) }, { 24, 12 });
-					return;
-				}
-			}
 
 			
 
 
-			if (clickPos.y == 16) // Toggle sustain forever
+			if (clickPos.y == 7) // Toggle sustain forever
 			{
 				if (clickPos.x == 6)
 				{
-					loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].noSustain = !loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].noSustain;
+					loadedInstruments[editor.selectedInstrument].waveforms[0].noSustain = !loadedInstruments[editor.selectedInstrument].waveforms[0].noSustain;
+				}
+			}
+			else if (clickPos.y == 13) // Toggle sustain forever (modulator
+			{
+				if (clickPos.x == 6)
+				{
+					loadedInstruments[editor.selectedInstrument].waveforms[1].noSustain = !loadedInstruments[editor.selectedInstrument].waveforms[1].noSustain;
 				}
 			}
 
 
-			
+			if (clickPos.y > 21 && clickPos.y < 26)
+			{
+				if (clickPos.x > 16 && clickPos.x < 23)
+				{
+					sampleDisplay.selectedEnvelope = clickPos.y - 22;
+					DrawSampleDisplay();
+				}
+			}
 
 
 			if (clickPos.y > 25 && clickPos.y < 38 && editor.selectedInstrument > -1) // Sample display
@@ -603,24 +587,6 @@ void ClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clickPos
 				gui.drawFrameThisFrame = true;
 			}
 		}
-		else if (wind->name == "Copy Instrument")
-		{
-			if (clickPos.y >= 1.0f && clickPos.y < 10.0f)
-			{
-				if (clickPos.x >= 1.0f)
-				{
-					instrumentFloatingWindow.selectedInstrument = clickPos.y - 1 + instrumentFloatingWindow.instrumentListScroll;
-					sampleDisplay.selectedOperator = 0; // Select the first sample operator.
-				}
-			}
-
-			if (clickPos.y == 11 && clickPos.x > 7 && clickPos.x < 14) // Copy instrument.
-			{
-				loadedInstruments[editor.selectedInstrument] = loadedInstruments[instrumentFloatingWindow.selectedInstrument];
-
-				return;
-			}
-		}
 	}
 
 
@@ -699,58 +665,122 @@ void HoldClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clic
 			if (!loadedInstruments[editor.selectedInstrument].enabled)
 				return;
 
-			if (clickPos.x > 9 && clickPos.x < 18)
+			if (clickPos.x > 7 && clickPos.x < 16)
 			{
-				if (int(clickPos.y) == 10) // Edit noise volume.
+				if (int(clickPos.y) == 5) // Edit noise volume.
 				{
-					loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].noiseVolume = (float(int((clickPos.x - 9) * 2.0f)) / 16.0f);
+					loadedInstruments[editor.selectedInstrument].waveforms[0].noiseVolume = (float(int((clickPos.x - 7) * 2.0f)) / 16.0f);
 
-					if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].noiseVolume < 0.0f)
-						loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].noiseVolume = 0.0f;
-					if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].noiseVolume > 1.0f)
-						loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].noiseVolume = 1.0f;
+					if (loadedInstruments[editor.selectedInstrument].waveforms[0].noiseVolume < 0.0f)
+						loadedInstruments[editor.selectedInstrument].waveforms[0].noiseVolume = 0.0f;
+					if (loadedInstruments[editor.selectedInstrument].waveforms[0].noiseVolume > 1.0f)
+						loadedInstruments[editor.selectedInstrument].waveforms[0].noiseVolume = 1.0f;
 
 					loadedSong.unsavedChanges = true;
 
 					return;
 
 				}
-				else if (int(clickPos.y) == 11) // Set sample octave.
+				else if (int(clickPos.y) == 6) // Set sample octave.
 				{
-					loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].octave = 15 - int(float(int((clickPos.x - 9) * 2.0f)));
+					loadedInstruments[editor.selectedInstrument].waveforms[0].octave = 15 - int(float(int((clickPos.x - 7) * 2.0f)));
 
-					if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].octave < 0)
-						loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].octave = 0;
-					else if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].octave > 15)
-						loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].octave = 15;
+					if (loadedInstruments[editor.selectedInstrument].waveforms[0].octave < 0)
+						loadedInstruments[editor.selectedInstrument].waveforms[0].octave = 0;
+					else if (loadedInstruments[editor.selectedInstrument].waveforms[0].octave > 15)
+						loadedInstruments[editor.selectedInstrument].waveforms[0].octave = 15;
 
 					loadedSong.unsavedChanges = true;
 
 					return;
 				}
-				else if (int(clickPos.y) == 13) // Set wave offset.
+				else if (int(clickPos.y) == 7) // Set sample release.
 				{
-					loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].offset = (float(int((clickPos.x - 9) * 2.0f)) / 16.0f);
 
-					if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].offset < 0)
-						loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].offset = 0;
-					else if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].offset > 0.9375)
-						loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].offset = 0.9375;
+					loadedInstruments[editor.selectedInstrument].waveforms[0].release = (float(int((clickPos.x - 7) * 2.0f)) / 16.0f);
+
+					if (loadedInstruments[editor.selectedInstrument].waveforms[0].release < 0.0f)
+						loadedInstruments[editor.selectedInstrument].waveforms[0].release = 0.0f;
+					else if (loadedInstruments[editor.selectedInstrument].waveforms[0].release > 1.0f)
+						loadedInstruments[editor.selectedInstrument].waveforms[0].release = 1.0f;
 
 					loadedSong.unsavedChanges = true;
-					DrawSampleDisplay();
+					return;
+				}
+				else if (int(clickPos.y) == 8) // Set LFO depth.
+				{
+
+					loadedInstruments[editor.selectedInstrument].waveforms[0].lfoDepth = (float(int((clickPos.x - 7) * 2.0f)) / 16.0f);
+
+					if (loadedInstruments[editor.selectedInstrument].waveforms[0].lfoDepth < 0.0f)
+						loadedInstruments[editor.selectedInstrument].waveforms[0].lfoDepth = 0.0f;
+					else if (loadedInstruments[editor.selectedInstrument].waveforms[0].lfoDepth > 1.0f)
+						loadedInstruments[editor.selectedInstrument].waveforms[0].lfoDepth = 1.0f;
+
+					loadedSong.unsavedChanges = true;
+					return;
+				}
+				else if (int(clickPos.y) == 9) // Set LFO speed.
+				{
+
+					loadedInstruments[editor.selectedInstrument].waveforms[0].lfoSpeed = (float(int((clickPos.x - 7) * 2.0f)) / 16.0f);
+
+					if (loadedInstruments[editor.selectedInstrument].waveforms[0].lfoSpeed < 0.0f)
+						loadedInstruments[editor.selectedInstrument].waveforms[0].lfoSpeed = 0.0f;
+					else if (loadedInstruments[editor.selectedInstrument].waveforms[0].lfoSpeed > 1.0f)
+						loadedInstruments[editor.selectedInstrument].waveforms[0].lfoSpeed = 1.0f;
+
+					loadedSong.unsavedChanges = true;
+					return;
+				}
+				else if (int(clickPos.y) == 12) // Set sample octave. (Modulator)
+				{
+					loadedInstruments[editor.selectedInstrument].waveforms[1].octave = 15 - int(float(int((clickPos.x - 7) * 2.0f)));
+
+					if (loadedInstruments[editor.selectedInstrument].waveforms[1].octave < 0)
+						loadedInstruments[editor.selectedInstrument].waveforms[1].octave = 0;
+					else if (loadedInstruments[editor.selectedInstrument].waveforms[1].octave > 15)
+						loadedInstruments[editor.selectedInstrument].waveforms[1].octave = 15;
+
+					loadedSong.unsavedChanges = true;
 
 					return;
 				}
-				else if (int(clickPos.y) == 16) // Set sample release.
+				else if (int(clickPos.y) == 13) // Set sample release. (Modulator)
 				{
 
-					loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].release = (float(int((clickPos.x - 9) * 2.0f)) / 16.0f);
+					loadedInstruments[editor.selectedInstrument].waveforms[1].release = (float(int((clickPos.x - 7) * 2.0f)) / 16.0f);
 
-					if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].release < 0.0f)
-						loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].release = 0.0f;
-					else if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].release > 1.0f)
-						loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].release = 1.0f;
+					if (loadedInstruments[editor.selectedInstrument].waveforms[1].release < 0.0f)
+						loadedInstruments[editor.selectedInstrument].waveforms[1].release = 0.0f;
+					else if (loadedInstruments[editor.selectedInstrument].waveforms[1].release > 1.0f)
+						loadedInstruments[editor.selectedInstrument].waveforms[1].release = 1.0f;
+
+					loadedSong.unsavedChanges = true;
+					return;
+				}
+				else if (int(clickPos.y) == 14) // Set LFO depth. (Modulator)
+				{
+
+					loadedInstruments[editor.selectedInstrument].waveforms[1].lfoDepth = (float(int((clickPos.x - 7) * 2.0f)) / 16.0f);
+
+					if (loadedInstruments[editor.selectedInstrument].waveforms[1].lfoDepth < 0.0f)
+						loadedInstruments[editor.selectedInstrument].waveforms[1].lfoDepth = 0.0f;
+					else if (loadedInstruments[editor.selectedInstrument].waveforms[1].lfoDepth > 1.0f)
+						loadedInstruments[editor.selectedInstrument].waveforms[1].lfoDepth = 1.0f;
+
+					loadedSong.unsavedChanges = true;
+					return;
+				}
+				else if (int(clickPos.y) == 15) // Set LFO speed. (Modulator)
+				{
+
+					loadedInstruments[editor.selectedInstrument].waveforms[1].lfoSpeed = (float(int((clickPos.x - 7) * 2.0f)) / 16.0f);
+
+					if (loadedInstruments[editor.selectedInstrument].waveforms[1].lfoSpeed < 0.0f)
+						loadedInstruments[editor.selectedInstrument].waveforms[1].lfoSpeed = 0.0f;
+					else if (loadedInstruments[editor.selectedInstrument].waveforms[1].lfoSpeed > 1.0f)
+						loadedInstruments[editor.selectedInstrument].waveforms[1].lfoSpeed = 1.0f;
 
 					loadedSong.unsavedChanges = true;
 					return;
@@ -758,7 +788,7 @@ void HoldClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clic
 				else if (int(clickPos.y) == 18) // Set instrument volume.
 				{
 
-					loadedInstruments[editor.selectedInstrument].volume = (float(int((clickPos.x - 9) * 2.0f)) / 16.0f);
+					loadedInstruments[editor.selectedInstrument].volume = (float(int((clickPos.x - 7) * 2.0f)) / 16.0f);
 
 					if (loadedInstruments[editor.selectedInstrument].volume < 0.0f)
 						loadedInstruments[editor.selectedInstrument].volume = 0.0f;
@@ -769,22 +799,10 @@ void HoldClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clic
 					loadedSong.unsavedChanges = true;
 					return;
 				}
-				else if (int(clickPos.y) == 22) // Scaling parameter for mod.
-				{
-					loadedInstruments[editor.selectedInstrument].modScale = (float(int((clickPos.x - 9) * 2.0f)) / 16.0f);
-
-					if (loadedInstruments[editor.selectedInstrument].modScale < 0)
-						loadedInstruments[editor.selectedInstrument].modScale = 0;
-					else if (loadedInstruments[editor.selectedInstrument].modScale > 0.9375)
-						loadedInstruments[editor.selectedInstrument].modScale = 0.9375;
-
-					loadedSong.unsavedChanges = true;
-					return;
-				}
 				else if (int(clickPos.y) == 23) // Set arp speed.
 				{
-					loadedInstruments[editor.selectedInstrument].arpSpeed = (float(int((clickPos.x - 9))));
-					loadedInstruments[editor.selectedInstrument].arpSpeed = int(float(int((clickPos.x - 9) * 2.0f))) + 1;
+					loadedInstruments[editor.selectedInstrument].arpSpeed = (float(int((clickPos.x - 7))));
+					loadedInstruments[editor.selectedInstrument].arpSpeed = int(float(int((clickPos.x - 7) * 2.0f))) + 1;
 
 					if (loadedInstruments[editor.selectedInstrument].arpSpeed < 1)
 						loadedInstruments[editor.selectedInstrument].arpSpeed = 1;
@@ -798,6 +816,27 @@ void HoldClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clic
 
 
 
+
+			if (clickPos.x > 16 && clickPos.x < 24) // Carrier frequencies.
+			{
+				if (clickPos.y > 3 && clickPos.y < 18.0f) // Change frequencies.
+				{
+					if (int(clickPos.x) > 15)
+					{
+						int newFreqVal = (17.0f - clickPos.y) * 4.0f;
+						if (newFreqVal < 0) newFreqVal = 0;
+						else if (newFreqVal > 64) newFreqVal = 64;
+
+						if (loadedInstruments[editor.selectedInstrument].waveforms[0].frequencies[int(clickPos.x) - 12 - 4] != newFreqVal)
+						{
+							loadedInstruments[editor.selectedInstrument].waveforms[0].frequencies[int(clickPos.x) - 12 - 4] = newFreqVal;
+
+
+							loadedSong.unsavedChanges = true;
+						}
+					}
+				}
+			}
 			
 
 
@@ -846,9 +885,9 @@ void HoldClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clic
 						if (newFreqVal < 0) newFreqVal = 0;
 						else if (newFreqVal > 64) newFreqVal = 64;
 
-						if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].frequencies[int(clickPos.x) - 21 - 4] != newFreqVal)
+						if (loadedInstruments[editor.selectedInstrument].waveforms[1].frequencies[int(clickPos.x) - 21 - 4] != newFreqVal)
 						{
-							loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].frequencies[int(clickPos.x) - 21 - 4] = newFreqVal;
+							loadedInstruments[editor.selectedInstrument].waveforms[1].frequencies[int(clickPos.x) - 21 - 4] = newFreqVal;
 
 
 							loadedSong.unsavedChanges = true;
@@ -862,9 +901,9 @@ void HoldClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clic
 
 			if (clickPos.y > 25 && clickPos.y < 38 && editor.selectedInstrument > -1) // Sample display
 			{
-				if (clickPos.y > 30) // Create sample points.
+				if (clickPos.y > 26) // Create sample points.
 				{
-					float amp = 1.0f - (clickPos.y - 32.0f) / (37.0f - 32.0f);
+					float amp = 1.0f - (clickPos.y - 27.0f) / (37.0f - 27.0f);
 					amp *= 255.0f;
 					amp = int(amp);
 					if (amp < 0.0f) amp = 0.0f;
@@ -875,8 +914,13 @@ void HoldClickFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clic
 					if (pos < 0) pos = 0;
 					else if (pos > 31) pos = 31;
 
-					loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].envelope[pos] = int(amp);
-					
+					if (sampleDisplay.selectedEnvelope == 0) // AMP
+						loadedInstruments[editor.selectedInstrument].waveforms[0].envelope[pos] = int(amp);
+					else if (sampleDisplay.selectedEnvelope == 1) // FM
+						loadedInstruments[editor.selectedInstrument].waveforms[1].envelope[pos] = int(amp);
+					else if (sampleDisplay.selectedEnvelope == 2) // FREQ
+						loadedInstruments[editor.selectedInstrument].pitchEnvelope[pos] = int(amp);
+
 					
 					DrawSampleDisplay();
 
@@ -915,8 +959,39 @@ void RightHoldFloatingWindow(FloatingWindow* wind, int windowIndex, Vector2 clic
 	clickPos.y = int(clickPos.y);
 
 
+	
+
+	if (wind->name == "Instrument Editor")
+	{
+		if (!loadedInstruments[editor.selectedInstrument].enabled)
+			return;
 
 
+		if (clickPos.y > 25 && clickPos.y < 38 && editor.selectedInstrument > -1) // Sample display
+		{
+			if (clickPos.y > 26) // Create sample points.
+			{
+				int pos = int(gui.floatHoveredTile.x - windowController.windows[windowIndex].position.x - 1.0f);
+
+				if (pos < 0) pos = 0;
+				else if (pos > 31) pos = 31;
+
+				if (sampleDisplay.selectedEnvelope == 0) // AMP
+					loadedInstruments[editor.selectedInstrument].waveforms[0].envelope[pos] = 255;
+				else if (sampleDisplay.selectedEnvelope == 1) // FM
+					loadedInstruments[editor.selectedInstrument].waveforms[1].envelope[pos] = 255;
+				else if (sampleDisplay.selectedEnvelope == 2) // FREQ
+					loadedInstruments[editor.selectedInstrument].pitchEnvelope[pos] = 127;
+
+
+				DrawSampleDisplay();
+
+				return;
+			}
+		}
+
+
+	}
 
 	
 

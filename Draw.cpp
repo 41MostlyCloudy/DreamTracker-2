@@ -534,8 +534,6 @@ void  DrawTopUI()
 		DrawGUIText("(2): Decrease Pitch", 43, 68, 3, 3, 0);
 		DrawGUIText("(3): Increase Volume", 43, 68, 4, 3, 0);
 		DrawGUIText("(4): Decrease Volume", 43, 68, 5, 3, 0);
-		DrawGUIText("(5): Increase Modulator", 43, 68, 6, 3, 0);
-		DrawGUIText("(6): Decrease Modulator", 43, 68, 7, 3, 0);
 		DrawGUIText("(D): Delay Note", 43, 68, 8, 3, 0);
 		DrawGUIText("(E): Retrigger Note", 43, 68, 9, 3, 0);
 
@@ -2420,52 +2418,84 @@ void DrawFloatingWindow(FloatingWindow* wind)
 		DrawGUIText(loadedInstruments[editor.selectedInstrument].name, wind->position.x + 12, wind->position.x + 34, wind->position.y + 1, 3, 1);
 
 
-		// Copy instrument button.
-		gui.activeUI[int(wind->position.x + 2)][int(wind->position.y + 2)].sprite = { 5, 26 };
-		if (sampleDisplay.selectedOperator == 0)
-			DrawGUIText("CARRIER", wind->position.x + 3, wind->position.x + 12, wind->position.y + 2, 4, -1);
-		else
-			DrawGUIText("MODULATOR", wind->position.x + 3, wind->position.x + 12, wind->position.y + 2, 4, -1);
-		gui.activeUI[int(wind->position.x + 12)][int(wind->position.y + 2)].sprite = { 6, 26 };
-
 
 
 		// Preset button.
-		gui.activeUI[int(wind->position.x + 14)][int(wind->position.y + 2)].sprite = { 5, 26 };
-		DrawGUIText("PRESETS", wind->position.x + 15, wind->position.x + 22, wind->position.y + 2, 4, -1);
-		gui.activeUI[int(wind->position.x + 22)][int(wind->position.y + 2)].sprite = { 6, 26 };
+		gui.activeUI[int(wind->position.x + 2)][int(wind->position.y + 2)].sprite = { 5, 26 };
+		DrawGUIText("PRESETS", wind->position.x + 3, wind->position.x + 10, wind->position.y + 2, 4, -1);
+		gui.activeUI[int(wind->position.x + 10)][int(wind->position.y + 2)].sprite = { 6, 26 };
 
-
-		// Copy instrument button.
-		gui.activeUI[int(wind->position.x + 24)][int(wind->position.y + 2)].sprite = { 5, 26 };
-		DrawGUIText("COPY", wind->position.x + 25, wind->position.x + 29, wind->position.y + 2, 4, -1);
-		gui.activeUI[int(wind->position.x + 29)][int(wind->position.y + 2)].sprite = { 6, 26 };
 
 
 		
 		
-		DrawWaveTypeButton(loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].waveType, int(wind->position.x) + 3, int(wind->position.y) + 4);
+		DrawWaveTypeButton(loadedInstruments[editor.selectedInstrument].waveforms[0].waveType, int(wind->position.x) + 3, int(wind->position.y) + 4);
 
 
 		// Noise volume.
-		DrawGUIText("Noise:" + std::to_string(int(loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].noiseVolume * 10)), wind->position.x + 1, wind->position.x + 10, wind->position.y + 10, 3, 0);
-		DrawHorizontalSlider(int(wind->position.x + 9), int(wind->position.x + 17), int(wind->position.y + 10), loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].noiseVolume);
+		DrawGUIText("Noise:" + std::to_string(int(loadedInstruments[editor.selectedInstrument].waveforms[0].noiseVolume * 10)), wind->position.x + 1, wind->position.x + 10, wind->position.y + 5, 3, 0);
+		DrawHorizontalSlider(int(wind->position.x + 7), int(wind->position.x + 15), int(wind->position.y + 5), loadedInstruments[editor.selectedInstrument].waveforms[0].noiseVolume);
 
 
 		// Octave
-		DrawGUIText("Octave:", wind->position.x + 1, wind->position.x + 16, wind->position.y + 11, 3, 0);
-		DrawHorizontalSlider(int(wind->position.x + 9), int(wind->position.x + 17), int(wind->position.y + 11), float(15 - loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].octave) / 16.0f);
+		DrawGUIText("Octave:", wind->position.x + 1, wind->position.x + 16, wind->position.y + 6, 3, 0);
+		DrawHorizontalSlider(int(wind->position.x + 7), int(wind->position.x + 15), int(wind->position.y + 6), float(15 - loadedInstruments[editor.selectedInstrument].waveforms[0].octave) / 16.0f);
 
+
+		// Release
+		if (loadedInstruments[editor.selectedInstrument].waveforms[0].noSustain)
+		{
+			DrawGUIText("Stop:", wind->position.x + 1, wind->position.x + 6, wind->position.y + 7, 2, 0);
+			gui.activeUI[int(wind->position.x + 6)][int(wind->position.y + 7)].sprite = { 23, 6 };
+		}
+		else
+		{
+			DrawGUIText("Stop:", wind->position.x + 1, wind->position.x + 6, wind->position.y + 7, 3, 0);
+			DrawHorizontalSlider(int(wind->position.x + 7), int(wind->position.x + 15), int(wind->position.y + 7), loadedInstruments[editor.selectedInstrument].waveforms[0].release);
+			gui.activeUI[int(wind->position.x + 6)][int(wind->position.y + 7)].sprite = { 24, 6 };
+		}
+
+		// LFO depth
+		DrawGUIText("LFO:", wind->position.x + 1, wind->position.x + 16, wind->position.y + 8, 3, 0);
+		DrawHorizontalSlider(int(wind->position.x + 7), int(wind->position.x + 15), int(wind->position.y + 8), loadedInstruments[editor.selectedInstrument].waveforms[0].lfoDepth);
+
+		// LFO speed
+		DrawGUIText("Speed:", wind->position.x + 1, wind->position.x + 16, wind->position.y + 9, 3, 0);
+		DrawHorizontalSlider(int(wind->position.x + 7), int(wind->position.x + 15), int(wind->position.y + 9), loadedInstruments[editor.selectedInstrument].waveforms[0].lfoSpeed);
+
+
+
+		DrawGUIText("Modulator", wind->position.x + 1, wind->position.x + 10, wind->position.y + 11, 3, 0);
+
+
+		// Modulator octave
+		DrawGUIText("Octave:", wind->position.x + 1, wind->position.x + 16, wind->position.y + 12, 3, 0);
+		DrawHorizontalSlider(int(wind->position.x + 7), int(wind->position.x + 15), int(wind->position.y + 12), float(15 - loadedInstruments[editor.selectedInstrument].waveforms[1].octave) / 16.0f);
+
+
+		// Modulator release
+		if (loadedInstruments[editor.selectedInstrument].waveforms[1].noSustain)
+		{
+			DrawGUIText("Stop:", wind->position.x + 1, wind->position.x + 6, wind->position.y + 13, 2, 0);
+			gui.activeUI[int(wind->position.x + 6)][int(wind->position.y + 13)].sprite = { 23, 6 };
+		}
+		else
+		{
+			DrawGUIText("Stop:", wind->position.x + 1, wind->position.x + 6, wind->position.y + 13, 3, 0);
+			DrawHorizontalSlider(int(wind->position.x + 7), int(wind->position.x + 15), int(wind->position.y + 13), loadedInstruments[editor.selectedInstrument].waveforms[1].release);
+			gui.activeUI[int(wind->position.x + 6)][int(wind->position.y + 13)].sprite = { 24, 6 };
+		}
+
+		// LFO depth
+		DrawGUIText("LFO:", wind->position.x + 1, wind->position.x + 16, wind->position.y + 14, 3, 0);
+		DrawHorizontalSlider(int(wind->position.x + 7), int(wind->position.x + 15), int(wind->position.y + 14), loadedInstruments[editor.selectedInstrument].waveforms[1].lfoDepth);
+
+		// LFO speed
+		DrawGUIText("Speed:", wind->position.x + 1, wind->position.x + 16, wind->position.y + 15, 3, 0);
+		DrawHorizontalSlider(int(wind->position.x + 7), int(wind->position.x + 15), int(wind->position.y + 15), loadedInstruments[editor.selectedInstrument].waveforms[1].lfoSpeed);
 		
 
-		// Offset
-		DrawGUIText("Offset:", wind->position.x + 1, wind->position.x + 10, wind->position.y + 13, 3, 0);
-		DrawHorizontalSlider(int(wind->position.x + 9), int(wind->position.x + 17), int(wind->position.y + 13), loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].offset);
-
-		gui.activeUI[int(wind->position.x + 12)][int(wind->position.y + 14)].sprite = { 8, 5 };
-		gui.activeUI[int(wind->position.x + 13)][int(wind->position.y + 14)].sprite = { 9, 5 };
-
-
+		
 
 
 		// Draw displays.
@@ -2542,32 +2572,37 @@ void DrawFloatingWindow(FloatingWindow* wind)
 
 
 			// Draw frequency display.
+			DrawGUIText("Carrier", wind->position.x + 16, wind->position.x + 23, wind->position.y + 2, 3, 0);
+			DrawGUIText("Modulator", wind->position.x + 25, wind->position.x + 34, wind->position.y + 2, 3, 0);
 
-			int offsetSprite = 0;
-			if (x == 1 || x == 3 || x == 7)
-				offsetSprite = 1;
-			else if (x == 0)
-				offsetSprite = 2;
-
-
-			for (int y = 0; y < 14; y++)
+			for (int op = 0; op < 2; op++)
 			{
-				float freqAmp = float(loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].frequencies[x]) * 0.25f;
+				int offsetSprite = 0;
+				if (x == 1 || x == 3 || x == 7)
+					offsetSprite = 1;
+				else if (x == 0)
+					offsetSprite = 2;
 
-				if (y < freqAmp)
+
+				for (int y = 0; y < 14; y++)
 				{
-					if (freqAmp - y == 0.25)
-						gui.activeUI[int(wind->position.x + 25 + x)][int(wind->position.y + 16 - y)].sprite = { 7, 20 + offsetSprite };
-					else if (freqAmp - y == 0.5)
-						gui.activeUI[int(wind->position.x + 25 + x)][int(wind->position.y + 16 - y)].sprite = { 8, 20 + offsetSprite };
-					else if (freqAmp - y == 0.75)
-						gui.activeUI[int(wind->position.x + 25 + x)][int(wind->position.y + 16 - y)].sprite = { 9, 20 + offsetSprite };
+					float freqAmp = float(loadedInstruments[editor.selectedInstrument].waveforms[op].frequencies[x]) * 0.25f;
+
+					if (y < freqAmp)
+					{
+						if (freqAmp - y == 0.25)
+							gui.activeUI[int(wind->position.x + 16 + (9 * op) + x)][int(wind->position.y + 16 - y)].sprite = { 7, 20 + offsetSprite };
+						else if (freqAmp - y == 0.5)
+							gui.activeUI[int(wind->position.x + 16 + (9 * op) + x)][int(wind->position.y + 16 - y)].sprite = { 8, 20 + offsetSprite };
+						else if (freqAmp - y == 0.75)
+							gui.activeUI[int(wind->position.x + 16 + (9 * op) + x)][int(wind->position.y + 16 - y)].sprite = { 9, 20 + offsetSprite };
+						else
+							gui.activeUI[int(wind->position.x + 16 + (9 * op) + x)][int(wind->position.y + 16 - y)].sprite = { 10, 20 + offsetSprite };
+					}
 					else
-						gui.activeUI[int(wind->position.x + 25 + x)][int(wind->position.y + 16 - y)].sprite = { 10, 20 + offsetSprite };
-				}
-				else
-				{
-					gui.activeUI[int(wind->position.x + 25 + x)][int(wind->position.y + 16 - y)].sprite = { 6, 20 + offsetSprite };
+					{
+						gui.activeUI[int(wind->position.x + 16 + (9 * op) + x)][int(wind->position.y + 16 - y)].sprite = { 6, 20 + offsetSprite };
+					}
 				}
 			}
 		}
@@ -2576,7 +2611,8 @@ void DrawFloatingWindow(FloatingWindow* wind)
 
 		for (int y = 0; y < 23; y++)
 		{
-			gui.activeUI[int(wind->position.x + 24)][int(wind->position.y + y + 3)].sprite = { 6, 23 };
+			gui.activeUI[int(wind->position.x + 15)][int(wind->position.y + y + 3)].sprite = { 6, 23 };
+			gui.activeUI[int(wind->position.x + 24)][int(wind->position.y + y + 3)].sprite = { 2, 4 };
 			gui.activeUI[int(wind->position.x + 33)][int(wind->position.y + y + 3)].sprite = { 7, 23 };
 		}
 
@@ -2612,25 +2648,11 @@ void DrawFloatingWindow(FloatingWindow* wind)
 
 
 		
-
-
-
-		
 		
 
-		// Release
-		if (loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].noSustain)
-		{
-			DrawGUIText("Stop:", wind->position.x + 1, wind->position.x + 16, wind->position.y + 16, 2, 0);
-			gui.activeUI[int(wind->position.x + 6)][int(wind->position.y + 16)].sprite = { 23, 6 };
-		}
-		else
-		{
-			DrawGUIText("Stop:", wind->position.x + 1, wind->position.x + 16, wind->position.y + 16, 3, 0);
-			DrawHorizontalSlider(int(wind->position.x + 9), int(wind->position.x + 17), int(wind->position.y + 16), loadedInstruments[editor.selectedInstrument].waveforms[sampleDisplay.selectedOperator].release);
-			gui.activeUI[int(wind->position.x + 6)][int(wind->position.y + 16)].sprite = { 24, 6 };
-		}
 		
+
+
 
 
 		// Instrument parameter division bar.
@@ -2639,40 +2661,30 @@ void DrawFloatingWindow(FloatingWindow* wind)
 
 		// Volume
 		DrawGUIText("Volume:", wind->position.x + 1, wind->position.x + 10, wind->position.y + 18, 3, 0);
-		DrawHorizontalSlider(int(wind->position.x + 9), int(wind->position.x + 17), int(wind->position.y + 18), loadedInstruments[editor.selectedInstrument].volume);
+		DrawHorizontalSlider(int(wind->position.x + 7), int(wind->position.x + 15), int(wind->position.y + 18), loadedInstruments[editor.selectedInstrument].volume);
 
 		
-		// Mod type menu
-		for (int i = 0; i < 4; i++)
-		{
-			if (loadedInstruments[editor.selectedInstrument].modulationType == i)
-			{
-				gui.activeUI[int(wind->position.x + i * 2 + 2)][wind->position.y + 21].sprite = { i * 2, 10 };
-				gui.activeUI[int(wind->position.x + i * 2 + 3)][wind->position.y + 21].sprite = { i * 2 + 1, 10 };
-			}
-			else
-			{
-				gui.activeUI[int(wind->position.x + i * 2 + 2)][wind->position.y + 21].sprite = { i * 2, 11 };
-				gui.activeUI[int(wind->position.x + i * 2 + 3)][wind->position.y + 21].sprite = { i * 2 + 1, 11 };
-			}
-		}
-
-
-		// Scatter
-		DrawGUIText("Mod:", wind->position.x + 1, wind->position.x + 10, wind->position.y + 22, 3, 0);
-		DrawHorizontalSlider(int(wind->position.x + 9), int(wind->position.x + 17), int(wind->position.y + 22), loadedInstruments[editor.selectedInstrument].modScale);
-
+		
 
 		// Volume/Arp speed
 		DrawGUIText("Arp:", wind->position.x + 1, wind->position.x + 10, wind->position.y + 23, 3, 0);
-		DrawHorizontalSlider(int(wind->position.x + 9), int(wind->position.x + 17), int(wind->position.y + 23), float(loadedInstruments[editor.selectedInstrument].arpSpeed - 1) / 16.0f);
+		DrawHorizontalSlider(int(wind->position.x + 7), int(wind->position.x + 15), int(wind->position.y + 23), float(loadedInstruments[editor.selectedInstrument].arpSpeed - 1) / 16.0f);
 
 		
 
+		DrawGUIText("ENVELOPE", wind->position.x + 16, wind->position.x + 24, wind->position.y + 19, 3, 0);
 
-		
+		for (int y = 0; y < 3; y++)
+		{
+			gui.activeUI[int(wind->position.x + 17)][int(wind->position.y + 22 + y)].sprite = { 5, 26 };
+			gui.activeUI[int(wind->position.x + 22)][int(wind->position.y + 22 + y)].sprite = { 6, 26 };
+		}
 
+		gui.activeUI[int(wind->position.x + 17)][int(wind->position.y + 22 + sampleDisplay.selectedEnvelope)].sprite = { 5, 4 };
 
+		DrawGUIText("AMP", wind->position.x + 18, wind->position.x + 22, wind->position.y + 22, 4, -1);
+		DrawGUIText(" FM", wind->position.x + 18, wind->position.x + 22, wind->position.y + 23, 4, -1);
+		DrawGUIText("FREQ", wind->position.x + 18, wind->position.x + 22, wind->position.y + 24, 4, -1);
 
 
 

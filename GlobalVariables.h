@@ -19,6 +19,10 @@ float delta = 0.0f; // Time between frames.
 
 
 // Waveforms: Sine, Square, Triangle, Saw
+//int waveformLength = 367;
+//int waveformLength = 734;
+int waveformLength = 1468;
+float waveformSpeed = 8.0f;
 Waveform waveForms[4];
 
 
